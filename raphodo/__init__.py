@@ -21,14 +21,13 @@ Initialize gettext translations.
 """
 
 __author__ = "Damon Lynch"
-__copyright__ = "Copyright 2016-2021, Damon Lynch"
+__copyright__ = "Copyright 2016-2024, Damon Lynch"
 
-from typing import Optional
-import os
+import builtins
 import gettext
 import locale
+import os
 from pathlib import Path
-import builtins
 
 from PyQt5.QtCore import QSettings, QStandardPaths
 
@@ -38,11 +37,11 @@ def sample_translation() -> str:
     :return: return the Spanish translation as a sample translation
     """
 
-    mo_file = "{}.mo".format(i18n_domain)
+    mo_file = f"{i18n_domain}.mo"
     return os.path.join("es", "LC_MESSAGES", mo_file)
 
 
-def locale_directory() -> Optional[str]:
+def locale_directory() -> str | None:
     """
     Locate locale directory. Prioritizes whatever is newer, comparing the locale
     directory at xdg_data_home and the one in /usr/share/
@@ -58,6 +57,10 @@ def locale_directory() -> Optional[str]:
         snap_dir = os.getenv("SNAP", "")
         return os.path.join(snap_dir, "/usr/lib/locale")
 
+    locale_dir = os.getenv("RPD_I18N_DIR")
+    if locale_dir is not None and os.path.isdir(locale_dir):
+        return locale_dir
+
     sample_lang_path = sample_translation()
     locale_mtime = 0.0
     locale_dir = None
@@ -68,9 +71,12 @@ def locale_directory() -> Optional[str]:
     for path in (data_home, "/usr/share"):
         locale_path = os.path.join(path, "locale")
         sample_path = os.path.join(locale_path, sample_lang_path)
-        if os.path.isfile(sample_path) and os.access(sample_path, os.R_OK):
-            if os.path.getmtime(sample_path) > locale_mtime:
-                locale_dir = locale_path
+        if (
+            os.path.isfile(sample_path)
+            and os.access(sample_path, os.R_OK)
+            and os.path.getmtime(sample_path) > locale_mtime
+        ):
+            locale_dir = locale_path
     return locale_dir
 
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2022 Damon Lynch <damonlynch@gmail.com>
+# Copyright (C) 2007-2024 Damon Lynch <damonlynch@gmail.com>
 
 # This file is part of Rapid Photo Downloader.
 #
@@ -18,54 +18,49 @@
 # see <http://www.gnu.org/licenses/>.
 
 __author__ = "Damon Lynch"
-__copyright__ = "Copyright 2007-2022, Damon Lynch"
+__copyright__ = "Copyright 2007-2024, Damon Lynch"
 
 import contextlib
-import site
+import ctypes
+import importlib.metadata
 import locale
 import logging
 import os
-from pathlib import Path
 import random
 import re
-import string
-import sys
-import tempfile
-import time
-import tarfile
-from collections import namedtuple, defaultdict
-
-from datetime import datetime
-from itertools import groupby, zip_longest
-from typing import Optional, List, Union, Any, Tuple, Iterator
-import struct
-import ctypes
 import signal
+import string
+import struct
+import sys
+import tarfile
+import tempfile
 import warnings
-import babel
+from collections import defaultdict, namedtuple
+from datetime import datetime
 from glob import glob
-from pkg_resources import parse_version
-import pkg_resources
+from itertools import groupby
+from pathlib import Path
 
 import arrow
+import babel
 import psutil
-from PyQt5.QtCore import QSize, QLocale, QTranslator, QLibraryInfo, QStandardPaths
+from packaging.version import parse
+from PyQt5.QtCore import QLibraryInfo, QSize, QStandardPaths, QTranslator
 
 import raphodo.__about__ as __about__
-from raphodo.constants import disable_version_check
-from raphodo import localedir, i18n_domain
+from raphodo import i18n_domain, localedir
 
-
+# TODO check which version of Arrow is used in distros these days
 # Arrow 0.9.0 separated the replace and shift functions into separate calls,
 # deprecating using replace() to do the work of the new shift()
 # Arrow 0.14.5 removed the deprecated shift functionality from the replace()
 try:
-    arrow_version = parse_version(arrow.__version__)
+    arrow_version = parse(arrow.__version__)
 except AttributeError:
     arrow_version = None
 
 if arrow_version is not None:
-    arrow_shift_support = arrow_version >= parse_version("0.9.0")
+    arrow_shift_support = arrow_version >= parse("0.9.0")
 else:
     try:
         now = arrow.now()
@@ -76,7 +71,7 @@ else:
 
 
 # Suppress parsing warnings for 0.14.3 <= Arrow version < 0.15
-if arrow_version >= parse_version("0.14.3") and arrow_version < parse_version("0.15.0"):
+if arrow_version >= parse("0.14.3") and arrow_version < parse("0.15.0"):
     from arrow.factory import ArrowParseWarning
 
     warnings.simplefilter("ignore", ArrowParseWarning)
@@ -112,10 +107,9 @@ def available_cpu_count(physical_only=False) -> int:
     available = None
     if sys.platform.startswith("linux"):
         try:
-            status_file = open("/proc/self/status")
-            status = status_file.read()
-            status_file.close()
-        except IOError:
+            with open("/proc/self/status") as status_file:
+                status = status_file.read()
+        except OSError:
             pass
         else:
             m = re.search(r"(?m)^Cpus_allowed:\s*(.*)$", status)
@@ -141,7 +135,12 @@ def available_cpu_count(physical_only=False) -> int:
         return 1
 
 
-def confirm(prompt: Optional[str] = None, resp: Optional[bool] = False) -> bool:
+def default_thumbnail_process_count() -> int:
+    num_system_cores = max(available_cpu_count(physical_only=True), 2)
+    return min(num_system_cores, 8)
+
+
+def confirm(prompt: str | None = None, resp: bool | None = False) -> bool:
     r"""
     Prompts for yes or no response from the user.
 
@@ -164,10 +163,7 @@ def confirm(prompt: Optional[str] = None, resp: Optional[bool] = False) -> bool:
     if prompt is None:
         prompt = "Confirm"
 
-    if resp:
-        prompt = "%s [%s]|%s: " % (prompt, "y", "n")
-    else:
-        prompt = "%s [%s]|%s: " % (prompt, "n", "y")
+    prompt = f"{prompt} [y]|n: " if resp else f"{prompt} [n]|y: "
 
     while True:
         ans = input(prompt)
@@ -194,7 +190,7 @@ def stdchannel_redirected(stdchannel, dest_filename):
     oldstdchannel = dest_file = None
     try:
         oldstdchannel = os.dup(stdchannel.fileno())
-        dest_file = open(dest_filename, "w")
+        dest_file = open(dest_filename, "w")  # noqa: SIM115
         os.dup2(dest_file.fileno(), stdchannel.fileno())
         yield
     finally:
@@ -209,8 +205,8 @@ def show_errors():
     yield
 
 
-# Translators: these values are file size suffixes like B representing bytes, KB representing
-# kilobytes, etc.
+# Translators: these values are file size suffixes like B representing bytes, KB
+# representing kilobytes, etc.
 suffixes = [
     _("B"),
     _("KB"),
@@ -273,7 +269,7 @@ def format_size_for_user(
             .rstrip(".")
         )
     else:
-        s = "{:.0f}".format(size_in_bytes)
+        s = f"{size_in_bytes:.0f}"
     return s + " " + suffixes[i]
 
 
@@ -307,16 +303,17 @@ def divide_list(source: list, no_pieces: int) -> list:
     return result
 
 
-def divide_list_on_length(source: List, length: int) -> List:
-
+def divide_list_on_length(
+    source: list[int, ...], length: int
+) -> list[list[int, ...], ...]:
     r"""
     Break a list into lists no longer than length.
 
-    >>> l=list(range(11))
-    >>> divide_list_on_length(l, 3)
+    >>> li=list(range(11))
+    >>> divide_list_on_length(li, 3)
     [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10]]
-    >>> l=list(range(12))
-    >>> divide_list_on_length(l, 3)
+    >>> li=list(range(12))
+    >>> divide_list_on_length(li, 3)
     [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]]
     """
 
@@ -351,10 +348,10 @@ CacheDirs = namedtuple("CacheDirs", "photo_cache_dir, video_cache_dir")
 
 
 def create_temp_dir(
-    folder: Optional[str] = None,
-    prefix: Optional[str] = None,
+    folder: str | None = None,
+    prefix: str | None = None,
     force_no_prefix: bool = False,
-    temp_dir_name: Optional[str] = None,
+    temp_dir_name: str | None = None,
 ) -> str:
     """
     Creates a temporary director and logs errors
@@ -377,7 +374,7 @@ def create_temp_dir(
             if i == 0:
                 path = os.path.join(folder, temp_dir_name)
             else:
-                path = os.path.join(folder, "{}_{}".format(temp_dir_name, i))
+                path = os.path.join(folder, f"{temp_dir_name}_{i}")
             try:
                 os.mkdir(path=path, mode=0o700)
             except FileExistsError:
@@ -391,10 +388,9 @@ def create_temp_dir(
         try:
             temp_dir = tempfile.mkdtemp(prefix=prefix, dir=folder)
         except OSError as inst:
-            msg = "Failed to create temporary directory in %s: %s %s" % (
-                folder,
-                inst.errno,
-                inst.strerror,
+            msg = (
+                f"Failed to create temporary directory in {folder}: "
+                f"{inst.errno} {inst.strerror}"
             )
             logging.critical(msg)
             temp_dir = None
@@ -454,7 +450,7 @@ def find_mount_point(path: str) -> str:
     return path
 
 
-def make_internationalized_list(items: List[str]) -> str:
+def make_internationalized_list(items: list[str]) -> str:
     r"""
     Makes a string of items conforming to i18n
 
@@ -489,16 +485,22 @@ def make_internationalized_list(items: List[str]) -> str:
     if len(items) > 2:
         s = items[0]
         for item in items[1:-1]:
-            # Translators: the middle of a list of things
+            # Translators: the middle of a list of things,
+            # e.g, 'camera, memory card'
             # Translators: %(variable)s represents Python code, not a plural of the term
             # variable. You must keep the %(variable)s untranslated, or the program will
             # crash.
-            s = "%(first_items)s, %(last_items)s" % dict(first_items=s, last_items=item)
-        # Translators: the end of a list of things
+            s = _("%(first_items)s, %(last_items)s") % dict(
+                first_items=s, last_items=item
+            )
+        # Translators: the end of a list of things,
+        # e.g, 'camera, memory card and external drive'
+        # where 'camera, memory card' are represented by start_items in the code
+        # and 'external drive' is represented by last_item in the code
         # Translators: %(variable)s represents Python code, not a plural of the term
         # variable. You must keep the %(variable)s untranslated, or the program will
         # crash.
-        s = "%(start_items)s and %(last_item)s" % dict(
+        s = _("%(start_items)s and %(last_item)s") % dict(
             start_items=s, last_item=items[-1]
         )
         return s
@@ -510,7 +512,7 @@ def thousands(i: int) -> str:
     Add a thousands separator (or its locale equivalent) to an
     integer. Assumes the module level locale setting has already been
     set.
-    :param i: the integer e.g. 1000
+    :param i: the integer e.g., 1000
     :return: string with seperators e.g. '1,000'
     """
     try:
@@ -523,9 +525,11 @@ def thousands(i: int) -> str:
 # http://stupidpythonideas.blogspot.com/2014/01/grouping-into-runs-of-adjacent-values.html
 class AdjacentKey:
     r"""
-    >>> [list(g) for k, g in groupby([0, 1, 2, 3, 5, 6, 7, 10, 11, 13, 16], AdjacentKey)]
+    >>> example = [0, 1, 2, 3, 5, 6, 7, 10, 11, 13, 16]
+    >>> [list(g) for k, g in groupby(example, AdjacentKey)]
     [[0, 1, 2, 3], [5, 6, 7], [10, 11], [13], [16]]
     """
+
     __slots__ = ["obj"]
 
     def __init__(self, obj) -> None:
@@ -617,7 +621,7 @@ def number(value: int) -> numbers:
 
 
 def datetime_roughly_equal(
-    dt1: Union[datetime, float], dt2: Union[datetime, float], seconds: int = 120
+    dt1: datetime | float, dt2: datetime | float, seconds: int = 120
 ) -> bool:
     r"""
     Check to see if date times are equal, give or take n seconds
@@ -686,10 +690,10 @@ def make_html_path_non_breaking(path: str) -> str:
     :return: the path containing the special characters
     """
 
-    return path.replace(os.sep, "{}&#8288;".format(os.sep))
+    return path.replace(os.sep, f"{os.sep}&#8288;")
 
 
-def prefs_list_from_gconftool2_string(value: str) -> List[str]:
+def prefs_list_from_gconftool2_string(value: str) -> list[str]:
     r"""
     Take a raw string preference value as returned by gconftool-2
     and convert it to a list of strings.
@@ -702,8 +706,8 @@ def prefs_list_from_gconftool2_string(value: str) -> List[str]:
     >>> prefs_list_from_gconftool2_string( # doctest: +ELLIPSIS
     ... '[Text,IMG_,,Sequences,Stored number,Four digits,Filename,Extension,UPPERCASE]')
     ... # doctest: +NORMALIZE_WHITESPACE
-    ['Text', 'IMG_', '', 'Sequences', 'Stored number', 'Four digits', 'Filename', 'Extension',
-    'UPPERCASE']
+    ['Text', 'IMG_', '', 'Sequences', 'Stored number', 'Four digits', 'Filename',
+     'Extension', 'UPPERCASE']
     >>> prefs_list_from_gconftool2_string('[Text,IMG_\,\\;+=|!@\,#^&*()$%/",,]')
     ['Text', 'IMG_,\\;+=|!@,#^&*()$%/"', '', '']
     >>> prefs_list_from_gconftool2_string('[Manila,Dubai,London]')
@@ -727,7 +731,7 @@ def pref_bool_from_gconftool2_string(value: str) -> bool:
     raise ValueError
 
 
-def remove_last_char_from_list_str(items: List[str]) -> List[str]:
+def remove_last_char_from_list_str(items: list[str]) -> list[str]:
     r"""
     Remove the last character from a list of strings, modifying the list in place,
     such that the last item is never empty
@@ -786,11 +790,12 @@ def _collect_duplicates(basenames, paths):
     return {basename: paths for basename, paths in duplicates.items() if len(paths) > 1}
 
 
-def make_path_end_snippets_unique(*paths) -> List[str]:
+def make_path_end_snippets_unique(*paths) -> list[str]:
     r"""
     Make list of path ends unique given possible common path endings.
 
-    A snippet starts from the end of the path, in extreme cases possibly up the path start.
+    A snippet starts from the end of the path, in extreme cases possibly up the path
+    start.
 
     :param paths: sequence of paths to generate unique end snippets for
     :return: list of unique snippets
@@ -816,8 +821,8 @@ def make_path_end_snippets_unique(*paths) -> List[str]:
     ['damon/videos', 'backup1/videos', 'backup2/videos']
     >>> s4 = make_path_end_snippets_unique(p0, p1, p2, p3, p6)
     >>> print(s4) #doctest: +NORMALIZE_WHITESPACE
-    ['/home/damon/photos', '/media/damon/backup1/photos', '/media/damon/backup2/photos', 'videos',
-     'drive1/home/damon/photos']
+    ['/home/damon/photos', '/media/damon/backup1/photos', '/media/damon/backup2/photos',
+     'videos', 'drive1/home/damon/photos']
     >>> s5 = make_path_end_snippets_unique(p1, p2, p3, p6)
     >>> print(s5)
     ['backup1/photos', 'backup2/photos', 'videos', 'damon/photos']
@@ -868,41 +873,12 @@ def log_os_release() -> None:
 
     if not have_logged_os_release:
         try:
-            with open("/etc/os-release", "r") as f:
+            with open("/etc/os-release") as f:
                 for line in f:
                     logging.debug(line.rstrip("\n"))
-        except:
+        except Exception:
             pass
         have_logged_os_release = True
-
-
-def extract_file_from_tar(full_tar_path, member_filename) -> bool:
-    """
-    Extracts a file from a tar.gz and places it beside the tar file
-    :param full_tar_path: path and filename of the tar.gz file
-    :param member_filename: file wanted
-    :return: True if successful, False otherwise
-    """
-
-    tar_dir, tar_name = os.path.split(full_tar_path)
-    tar_name = tar_name[: len(".tar.gz") * -1]
-    member = os.path.join(tar_name, member_filename)
-    try:
-        with tarfile.open(full_tar_path) as tar:
-            tar.extractall(members=(tar.getmember(member),), path=tar_dir)
-    except Exception:
-        logging.error("Unable to extract %s from tarfile", member_filename)
-        return False
-    else:
-        try:
-            src = os.path.join(tar_dir, tar_name, member_filename)
-            dst = os.path.join(tar_dir, member_filename)
-            os.rename(src, dst)
-            os.rmdir(os.path.join(tar_dir, tar_name))
-            return True
-        except OSError:
-            logging.error("Unable to move %s to new location", member_filename)
-            return False
 
 
 def bug_report_full_tar_path() -> str:
@@ -917,18 +893,16 @@ def bug_report_full_tar_path() -> str:
     component = os.path.join(os.path.expanduser("~"), filename)
 
     i = 0
-    while os.path.isfile(
-        "{}{}.tar.gz".format(component, "" if not i else "-{}".format(i))
-    ):
+    while os.path.isfile(f"{component}{'' if not i else f'-{i}'}.tar.gz"):
         i += 1
 
-    return "{}{}.tar.gz".format(component, "" if not i else "-{}".format(i))
+    return f"{component}{'' if not i else f'-{i}'}.tar.gz"
 
 
 def create_bugreport_tar(
     full_tar_name: str,
-    log_path: Optional[str] = "",
-    full_config_file: Optional[str] = "",
+    log_path: str | None = "",
+    full_config_file: str | None = "",
 ) -> bool:
     """
     Create a tar file containing log and configuration files.
@@ -967,18 +941,19 @@ def create_bugreport_tar(
     try:
         with tarfile.open(full_tar_name, "x:gz") as t:
             os.chdir(log_path)
-            for l in glob("*"):
+            for li in glob("*"):
                 t.add(
-                    l,
+                    li,
                     "rapid-photo-downloader.0.log"
-                    if l == "rapid-photo-downloader.log"
-                    else l,
+                    if li == "rapid-photo-downloader.log"
+                    else li,
                 )
             os.chdir(config_dir)
             t.add(config_file)
     except FileNotFoundError as e:
         logging.error(
-            "When creating a bug report tar file, the directory or file %s does not exist",
+            "When creating a bug report tar file, the directory or file %s does "
+            "not exist",
             e.filename,
         )
     except Exception:
@@ -986,17 +961,15 @@ def create_bugreport_tar(
     else:
         created = True
 
-    try:
+    with contextlib.suppress(FileNotFoundError):
         os.chdir(curr_dir)
-    except FileNotFoundError:
-        pass
 
     return created
 
 
 def current_version_is_dev_version(current_version=None) -> bool:
     if current_version is None:
-        current_version = parse_version(__about__.__version__)
+        current_version = parse(__about__.__version__)
     return current_version.is_prerelease
 
 
@@ -1071,7 +1044,7 @@ _flexible_dt_re = re.compile(
 )
 
 
-def flexible_date_time_parser(dt_string: str) -> Tuple[datetime, str]:
+def flexible_date_time_parser(dt_string: str) -> tuple[datetime, str]:
     r"""
     Use regular expresion to parse exif date time value, and attempt
     to convert it to a python date time.
@@ -1081,13 +1054,17 @@ def flexible_date_time_parser(dt_string: str) -> Tuple[datetime, str]:
     :return: datetime, may or may not have a time zone, and format string
 
     >>> flexible_date_time_parser('2018:09:03 14:00:13+01:00 DST')
-    datetime.datetime(2018, 9, 3, 14, 0, 13, tzinfo=datetime.timezone(datetime.timedelta(0, 3600)))
+    ... # doctest: +NORMALIZE_WHITESPACE
+    datetime.datetime(2018, 9, 3, 14, 0, 13, tzinfo=datetime.timezone(
+    datetime.timedelta(0, 3600)))
     >>> flexible_date_time_parser('2010:07:18 01:53:35')
     datetime.datetime(2010, 7, 18, 1, 53, 35)
     >>> flexible_date_time_parser('2016:02:27 22:18:03.00')
     datetime.datetime(2016, 2, 27, 22, 18, 3)
     >>> flexible_date_time_parser('2010:05:25 17:43:16+02:00')
-    datetime.datetime(2010, 5, 25, 17, 43, 16, tzinfo=datetime.timezone(datetime.timedelta(0, 7200)))
+    ... # doctest: +NORMALIZE_WHITESPACE
+    datetime.datetime(2010, 5, 25, 17, 43, 16, tzinfo=datetime.timezone(
+    datetime.timedelta(0, 7200)))
     >>> flexible_date_time_parser('2010:06:07 14:14:02+00:00')
     datetime.datetime(2010, 6, 7, 14, 14, 2, tzinfo=datetime.timezone.utc)
     >>> flexible_date_time_parser('2016-11-25T14:31:24')
@@ -1108,13 +1085,13 @@ def flexible_date_time_parser(dt_string: str) -> Tuple[datetime, str]:
 
     ss = m["subsecond"]
     if ss:
-        dte = "{}{}".format(dte, ss)
-        fs = "{}.%f".format(fs)
+        dte = f"{dte}{ss}"
+        fs = f"{fs}.%f"
 
     tze = m["timezone"]
     if tze:
-        dte = "{}{}".format(dte, tze.replace(":", ""))
-        fs = "{}%z".format(fs)
+        dte = f"{dte}{tze.replace(':', '')}"
+        fs = f"{fs}%z"
 
     # dst: daylight savings
     # no idea how to handle this properly -- so ignore for now!
@@ -1142,39 +1119,7 @@ def is_venv():
     )
 
 
-def python_package_version(package: str) -> str:
-    """
-    Determine the version of an installed Python package
-    :param package: package name
-    :return: version number, if could be determined, else ''
-    """
-
-    try:
-        return pkg_resources.get_distribution(package).version
-    except pkg_resources.DistributionNotFound:
-        return ""
-
-
-def is_snap() -> bool:
-    """
-    Determine if program is running in a snap environment
-    :return: True if it is False otherwise
-    """
-
-    snap_name = os.getenv("SNAP_NAME", "")
-    return snap_name.find("rapid-photo-downloader") >= 0
-
-
-def version_check_disabled():
-    """
-    Determine if version checking should be disabled or not
-    :return: True if it should be False otherwise
-    """
-
-    return disable_version_check or is_snap()
-
-
-def available_lang_codes() -> List[str]:
+def available_lang_codes() -> list[str]:
     """
     Detect translations that exist for Rapid Photo Downloader
     :return: list of language codes
@@ -1248,7 +1193,7 @@ def get_language_display_name(
         return display if not make_missing_lower else display.lower()
 
 
-def available_languages(display_locale_code: str = "") -> List[Tuple[str, str]]:
+def available_languages(display_locale_code: str = "") -> list[tuple[str, str]]:
     """
     Detect translations that exist for Rapid Photo Downloader
     :return: iterator of Tuple of language code and localized name
@@ -1282,7 +1227,7 @@ def available_languages(display_locale_code: str = "") -> List[Tuple[str, str]]:
     # Sort languages by display name
     langs = list(langs)
     try:
-        langs.sort(key=lambda l: locale.strxfrm(l[1]))
+        langs.sort(key=lambda i: locale.strxfrm(i[1]))
     except Exception:
         logging.error("Error sorting language names for display in program preferences")
     return langs
@@ -1299,24 +1244,19 @@ def installed_using_pip(package: str, suppress_errors: bool = True) -> bool:
     :return: True if installed via pip, else False
     """
 
-    # pkg_resources.get_distribution(package).get_metadata('INSTALLER') output seems
-    # to be unreliable
-    # newer way is importlib.metadata.distribution('pip').read_text('INSTALLER') but
-    # it has the same problem
-
     try:
-        pkg = pkg_resources.get_distribution(package)
-        location = pkg.location
-        return not location.startswith("/usr") or location.find("local") > 0
+        d = importlib.metadata.distribution(package)
+        return d.read_text("INSTALLER").strip().lower() == "pip"
     except Exception:
         if not suppress_errors:
             raise
         return False
 
 
-def getQtSystemTranslation(locale_name: str) -> Optional[QTranslator]:
+def getQtSystemTranslation(locale_name: str) -> QTranslator | None:
     """
-    Attempt to install Qt base system translations (for QMessageBox and QDialogBox buttons)
+    Attempt to install Qt base system translations (for QMessageBox and QDialogBox
+    buttons)
     :return: translator if loaded, else None
     """
 
@@ -1339,7 +1279,7 @@ def getQtSystemTranslation(locale_name: str) -> Optional[QTranslator]:
 
     qtTranslator = QTranslator()
     location = QLibraryInfo.location(QLibraryInfo.TranslationsPath)
-    qm_file = "qtbase_{}.qm".format(convert_locale.get(locale_name, locale_name))
+    qm_file = f"qtbase_{convert_locale.get(locale_name, locale_name)}.qm"
     qm_file = os.path.join(location, qm_file)
     if os.path.isfile(qm_file):
         if qtTranslator.load(qm_file):

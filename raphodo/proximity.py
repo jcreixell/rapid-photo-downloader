@@ -1,4 +1,4 @@
-# Copyright (C) 2015-2022 Damon Lynch <damonlynch@gmail.com>
+# Copyright (C) 2015-2024 Damon Lynch <damonlynch@gmail.com>
 
 # This file is part of Rapid Photo Downloader.
 #
@@ -17,15 +17,14 @@
 # see <http://www.gnu.org/licenses/>.
 
 __author__ = "Damon Lynch"
-__copyright__ = "Copyright 2015-2023, Damon Lynch"
+__copyright__ = "Copyright 2015-2024, Damon Lynch"
 
-from collections import namedtuple, defaultdict, deque, Counter
-from operator import attrgetter
-import locale
-from datetime import datetime
 import logging
+from collections import Counter, defaultdict, deque, namedtuple
+from collections.abc import Generator
+from datetime import datetime
 from itertools import groupby
-from typing import Dict, List, Tuple, Set, Optional, DefaultDict, Generator
+from operator import attrgetter
 
 import arrow.arrow
 from arrow.arrow import Arrow
@@ -37,83 +36,84 @@ except ImportError:
 
 from PyQt5.QtCore import (
     QAbstractTableModel,
-    QModelIndex,
-    Qt,
-    QSize,
-    QSizeF,
-    QRect,
+    QCoreApplication,
+    QEvent,
     QItemSelection,
     QItemSelectionModel,
+    QLineF,
+    QModelIndex,
+    QObject,
+    QPoint,
+    QRect,  # noqa: F401
+    QRectF,
+    QSize,
+    QSizeF,
+    Qt,
     pyqtSignal,
     pyqtSlot,
-    QRectF,
-    QPoint,
-    QLineF,
-    QEvent,
-    QObject,
-    QCoreApplication,
-)
-from PyQt5.QtWidgets import (
-    QTableView,
-    QStyledItemDelegate,
-    QSlider,
-    QLabel,
-    QVBoxLayout,
-    QStyleOptionViewItem,
-    QStyle,
-    QAbstractItemView,
-    QWidget,
-    QHBoxLayout,
-    QSizePolicy,
-    QSplitter,
-    QStackedWidget,
-    QPushButton,
-    QAction,
-    QFrame,
-    QApplication,
 )
 from PyQt5.QtGui import (
-    QPainter,
-    QFont,
     QColor,
-    QGuiApplication,
-    QPixmap,
-    QPalette,
-    QMouseEvent,
-    QIcon,
+    QFont,
     QFontMetricsF,
+    QGuiApplication,
+    QIcon,
+    QMouseEvent,
+    QPainter,
+    QPalette,
+    QPixmap,  # noqa: F401
     QShowEvent,
+)
+from PyQt5.QtWidgets import (
+    QAbstractItemView,
+    QAction,
+    QApplication,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QSlider,
+    QSplitter,
+    QStackedWidget,
+    QStyle,
+    QStyledItemDelegate,
+    QStyleOptionViewItem,
+    QTableView,
+    QVBoxLayout,
+    QWidget,
 )
 
 from raphodo.constants import (
-    FileType,
     Align,
-    proximity_time_steps,
-    TemporalProximityState,
-    fileTypeColor,
     CustomColors,
     DarkGray,
+    FileType,
     MediumGray,
+    Roles,
+    SyncButtonState,
+    TemporalProximityState,
+    fileTypeColor,
+    proximity_time_steps,
 )
-from raphodo.rpdfile import FileTypeCounter
 from raphodo.prefs.preferences import Preferences
-from raphodo.ui.viewutils import (
-    ThumbnailDataForProximity,
-    TightFlexiFrame,
-    coloredPixmap,
-    base64_thumbnail,
-    darkModePixmap,
-    is_dark_mode,
-)
+from raphodo.rpdfile import FileTypeCounter
 from raphodo.timeutils import (
     locale_time,
-    strip_zero,
     make_long_date_format,
     strip_am,
     strip_pm,
+    strip_zero,
+)
+from raphodo.ui.viewutils import (
+    ThumbnailDataForProximity,
+    TightFlexiFrame,
+    base64_thumbnail,
+    coloredPixmap,
+    darkModePixmap,
+    is_dark_mode,
 )
 from raphodo.utilities import runs
-from raphodo.constants import Roles, SyncButtonState
 
 ProximityRow = namedtuple(
     "ProximityRow",
@@ -132,7 +132,7 @@ def humanize_time_span(
     long_format: bool = False,
 ) -> str:
     r"""
-    Make times and time spans human readable.
+    Make times and time spans human-readable.
 
     To run the doc test, install language packs for Russian, German and Chinese
     in addition to English. See details in doctest.
@@ -145,6 +145,7 @@ def humanize_time_span(
     :param long_format: if True, return result in long format
     :return: tuple of time span to be read by humans, in short and long format
 
+    >>> import locale
     >>> locale.setlocale(locale.LC_ALL, ('en_US', 'utf-8'))
     'en_US.UTF-8'
     >>> start = arrow.Arrow(2015,11,3,9)
@@ -272,10 +273,10 @@ def humanize_time_span(
             starttime=start_time, endtime=end_time
         )
         if not long_format:
-            # Translators: for example 9:00 AM - 3:55 PM
+            # Translators: for example, 9:00 AM - 3:55 PM
             return time_span
         else:
-            # Translators: for example Nov 3 2015, 11:25 AM
+            # Translators: for example, Nov 3 2015, 11:25 AM
             # Translators: %(variable)s represents Python code, not a plural of the term
             # variable. You must keep the %(variable)s untranslated, or the program will
             # crash.
@@ -285,7 +286,7 @@ def humanize_time_span(
 
     # The start and end dates are on a different day
 
-    # Translators: for example Nov 3 or Dec 31
+    # Translators: for example, Nov 3 or Dec 31
     # Translators: %(variable)s represents Python code, not a plural of the term
     # variable. You must keep the %(variable)s untranslated, or the program will
     # crash.
@@ -300,7 +301,7 @@ def humanize_time_span(
     )
 
     if start.floor("year") != end.floor("year") or long_format:
-        # Translators: for example Nov 3 2015
+        # Translators: for example, Nov 3 2015
         # Translators: %(variable)s represents Python code, not a plural of the term
         # variable. You must keep the %(variable)s untranslated, or the program will
         # crash.
@@ -385,20 +386,20 @@ class ProximityDisplayValues:
     """
     Temporal Proximity cell sizes.
 
-    Calculated in different process to that of main window.
+    Calculated in a different process to that of the main window.
     """
 
     def __init__(self):
         self.depth = None
-        self.row_heights = []  # type: List[int]
-        self.col_widths = None  # type: Optional[Tuple[int]]
+        self.row_heights = []  # type: list[int]
+        self.col_widths = None  # type: tuple[int] | None
 
         # row : (width, height)
-        self.col0_sizes = {}  # type: Dict[int, Tuple[int, int]]
-        self.c2_alignment = {}  # type: Dict[int, Align]
-        self.c2_end_of_day = set()  # type: Set[int]
-        self.c2_end_of_month = set()  # type: Set[int]
-        self.c1_end_of_month = set()  # type: Set[int]
+        self.col0_sizes = {}  # type: dict[int, tuple[int, int]]
+        self.c2_alignment = {}  # type: dict[int, Align]
+        self.c2_end_of_day = set()  # type: set[int]
+        self.c2_end_of_month = set()  # type: set[int]
+        self.c1_end_of_month = set()  # type: set[int]
 
         self.assign_fonts()
 
@@ -540,7 +541,7 @@ class ProximityDisplayValues:
         return size
 
     def calculate_row_sizes(
-        self, rows: List[ProximityRow], spans: List[Tuple[int, int, int]], depth: int
+        self, rows: list[ProximityRow], spans: list[tuple[int, int, int]], depth: int
     ) -> None:
         """
         Calculate row height and column widths. The latter is trivial,
@@ -562,7 +563,7 @@ class ProximityDisplayValues:
         spans_dict = {(row, column): row_span for column, row, row_span in spans}
         next_span_start_c0 = next_span_start_c1 = 0
 
-        sizes = []  # type: List[Tuple[QSize, List[List[int]]]]
+        sizes = []  # type: list[tuple[QSize, list[list[int]]]]
         for row, value in enumerate(rows):
             if next_span_start_c0 == row:
                 c0_size = self.column0Size(value.year, value.month)
@@ -640,6 +641,8 @@ class ProximityDisplayValues:
     def assign_color(self, dominant_file_type: FileType) -> None:
         self.tableColor = fileTypeColor(dominant_file_type)
         self.tableColorDarker = self.tableColor.darker(110)
+        self.tableColorMouseover = self.tableColor.lighter(115)
+        self.tableColorMouseoverDarker = self.tableColorMouseover.darker(112)
 
 
 class MetaUid:
@@ -667,16 +670,14 @@ class MetaUid:
     """
 
     def __init__(self):
-        self._uids = tuple(
-            {} for i in (0, 1, 2)
-        )  # type: Tuple[Dict[int, List[bytes, ...]]]
-        self._no_uids = tuple({} for i in (0, 1, 2))  # type: Tuple[Dict[int, int]]
-        self._col2_row_index = dict()  # type: Dict[bytes, int]
+        self._uids = tuple({} for i in (0, 1, 2))  # type: tuple[dict[int, list[bytes, ...]], ...]
+        self._no_uids = tuple({} for i in (0, 1, 2))  # type: tuple[dict[int, int], ...]
+        self._col2_row_index = dict()  # type: dict[bytes, int]
 
     def __repr__(self):
-        return "MetaUid(%r %r)" % (self._no_uids, self._uids)
+        return f"MetaUid({self._no_uids!r} {self._uids!r})"
 
-    def __setitem__(self, key: Tuple[int, int], uids: List[bytes]) -> None:
+    def __setitem__(self, key: tuple[int, int], uids: list[bytes]) -> None:
         row, col = key
         assert row not in self._uids[col]
         self._uids[col][row] = uids
@@ -684,7 +685,7 @@ class MetaUid:
         for uid in uids:
             self._col2_row_index[uid] = row
 
-    def __getitem__(self, key: Tuple[int, int]) -> List[bytes]:
+    def __getitem__(self, key: tuple[int, int]) -> list[bytes]:
         row, col = key
         return self._uids[col][row]
 
@@ -702,7 +703,7 @@ class MetaUid:
                 if len(uids) > 1:
                     self._uids[col][row] = [uids[0], uids[-1]]
 
-    def no_uids(self, key: Tuple[int, int]) -> int:
+    def no_uids(self, key: tuple[int, int]) -> int:
         """
         Number of unique ids the cell had before it was trimmed.
         """
@@ -710,13 +711,13 @@ class MetaUid:
         row, col = key
         return self._no_uids[col][row]
 
-    def uids(self, column: int) -> Dict[int, List[bytes]]:
+    def uids(self, column: int) -> dict[int, list[bytes]]:
         return self._uids[column]
 
     def uid_to_col2_row(self, uid) -> int:
         return self._col2_row_index[uid]
 
-    def validate_rows(self, no_rows) -> Tuple[int]:
+    def validate_rows(self, no_rows) -> tuple[int, ...]:
         """
         Very simple validation test to see if all rows are present
         in cols 2 or 1.
@@ -759,54 +760,48 @@ class TemporalProximityGroups:
 
     # @profile
     def __init__(
-        self, thumbnail_rows: List[ThumbnailDataForProximity], temporal_span: int = 3600
+        self, thumbnail_rows: list[ThumbnailDataForProximity], temporal_span: int = 3600
     ):
-        self.rows = []  # type: List[ProximityRow]
+        self.rows = []  # type: list[ProximityRow]
 
-        self.invalid_rows = tuple()  # type: Tuple[int]
+        self.invalid_rows = tuple()  # type: tuple[int]
 
         # Store uids for each table cell
         self.uids = MetaUid()
 
-        self.file_types_in_cell = dict()  # type: Dict[Tuple[int, int], str]
-        times_by_proximity = defaultdict(list)  # type: DefaultDict[int, Arrow]
+        self.file_types_in_cell = dict()  # type: dict[tuple[int, int], str]
+        times_by_proximity = defaultdict(list)  # type: defaultdict[int, Arrow]
 
         # The rows the user sees in column 2 can span more than one row of the Timeline.
         # Each day always spans at least one row in the Timeline, possibly more.
 
         # group_no: no days spanned
-        day_spans_by_proximity = dict()  # type: Dict[int, int]
+        day_spans_by_proximity = dict()  # type: dict[int, int]
         # group_no: (
-        uids_by_day_in_proximity_group = (
-            dict()
-        )  # type: Dict[int, Tuple[Tuple[int, int, int], List[bytes]]]
+        uids_by_day_in_proximity_group = dict()  # type: dict[int, tuple[tuple[int, int, int], list[bytes]]]
 
         # uid: (year, month, day)
-        year_month_day = dict()  # type: Dict[bytes, Tuple[int, int, int]]
+        year_month_day = dict()  # type: dict[bytes, tuple[int, int, int]]
 
-        # group_no: List[uid]
-        uids_by_proximity = defaultdict(list)  # type: Dict[int, List[bytes, ...]]
+        # group_no: list[uid]
+        uids_by_proximity = defaultdict(list)  # type: dict[int, list[bytes, ...]]
         # Determine if proximity group contains any files have not been previously
         # downloaded
-        new_files_by_proximity = defaultdict(set)  # type: Dict[int, Set[bool]]
+        new_files_by_proximity = defaultdict(set)  # type: dict[int, set[bool]]
 
         # Text that will appear in column 2 -- they proximity groups
         text_by_proximity = deque()
 
         # (year, month, day): [uid, uid, ...]
-        self.day_groups = defaultdict(
-            list
-        )  # type: DefaultDict[Tuple[int, int, int], List[bytes]]
+        self.day_groups = defaultdict(list)  # type: defaultdict[tuple[int, int, int], list[bytes]]
         # (year, month): [uid, uid, ...]
-        self.month_groups = defaultdict(
-            list
-        )  # type: DefaultDict[Tuple[int, int], List[bytes]]
+        self.month_groups = defaultdict(list)  # type: defaultdict[tuple[int, int], list[bytes]]
         # year: [uid, uid, ...]
-        self.year_groups = defaultdict(list)  # type: DefaultDict[int, List[bytes]]
+        self.year_groups = defaultdict(list)  # type: defaultdict[int, list[bytes]]
 
         # How many columns the Timeline will display - don't display year when the only
         # dates are from this year, for instance.
-        self._depth = None  # type: Optional[int]
+        self._depth = None  # type: int|None
         # Compared to right now, does the Timeline contain an entry from the previous
         # year?
         self._previous_year = False
@@ -815,16 +810,16 @@ class TemporalProximityGroups:
         self._previous_month = False
 
         # Tuple of (column, row, row_span):
-        self.spans = []  # type: List[Tuple[int, int, int]]
-        self.row_span_for_column_starts_at_row = {}  # type: Dict[Tuple[int, int], int]
+        self.spans = []  # type: list[tuple[int, int, int]]
+        self.row_span_for_column_starts_at_row = {}  # type: dict[tuple[int, int], int]
 
         # Associate Timeline cells with uids
         # Timeline row: id
-        self.proximity_view_cell_id_col1 = {}  # type: Dict[int, int]
+        self.proximity_view_cell_id_col1 = {}  # type: dict[int, int]
         # Timeline row: id
-        self.proximity_view_cell_id_col2 = {}  # type: Dict[int, int]
+        self.proximity_view_cell_id_col2 = {}  # type: dict[int, int]
         # col1, col2, uid
-        self.col1_col2_uid = []  # type: List[Tuple[int, int, bytes]]
+        self.col1_col2_uid = []  # type: list[tuple[int, int, bytes]]
 
         if len(thumbnail_rows) == 0:
             return
@@ -942,7 +937,6 @@ class TemporalProximityGroups:
         # Iterating through the groups in order is critical. Cannot use dict.items()
         # here.
         for group_no in range(len(day_spans_by_proximity)):
-
             span = day_spans_by_proximity[group_no]
 
             timeline_row += 1
@@ -979,7 +973,7 @@ class TemporalProximityGroups:
             thumbnail_index += len(uids_by_day_in_proximity_group[group_no][0])
 
             # For any proximity groups that span more than one Timeline row because
-            # they span more than one calender day, add the day to the Timeline, with
+            # they span more than one calendar day, add the day to the Timeline, with
             # blank values for the proximity group (column 2).
             i = 0
             for y_m_d, day in uids_by_day_in_proximity_group[group_no][1:]:
@@ -1090,12 +1084,11 @@ class TemporalProximityGroups:
         atime: Arrow,
         col2_text: str,
         new_file: bool,
-        y_m_d: Tuple[int, int, int],
+        y_m_d: tuple[int, int, int],
         timeline_row: int,
         thumbnail_index: int,
         tooltip_col2_text: str,
     ) -> ProximityRow:
-
         atime_month = y_m_d[:2]
         if atime_month != self.prev_row_month:
             self.prev_row_month = atime_month
@@ -1127,12 +1120,12 @@ class TemporalProximityGroups:
         month_day = _("%(month)s %(numeric_day)s") % dict(
             month=atime.datetime.strftime("%b"), numeric_day=atime.format("D")
         )
-        # Translators: for example Nov 2 2015
+        # Translators: for example, Nov 2 2015
         # Translators: %(variable)s represents Python code, not a plural of the term
         # variable. You must keep the %(variable)s untranslated, or the program will
         # crash.
         tooltip_col1 = _("%(date)s %(year)s") % dict(date=month_day, year=atime.year)
-        # Translators: for example Nov 2015
+        # Translators: for example, Nov 2015
         # Translators: %(variable)s represents Python code, not a plural of the term
         # variable. You must keep the %(variable)s untranslated, or the program will
         # crash.
@@ -1181,9 +1174,12 @@ class TemporalProximityGroups:
         return self._depth
 
     def __repr__(self) -> str:
-        return f"TemporalProximityGroups with {len(self.rows)} rows and depth of {self.depth()}"
+        return (
+            f"TemporalProximityGroups with {len(self.rows)} "
+            f"rows and depth of {self.depth()}"
+        )
 
-    def validate(self, thumbnailModel=None) -> Tuple[int]:
+    def validate(self, thumbnailModel=None) -> tuple[int, ...]:
         """
         Partial validation of proximity values
         :return:
@@ -1194,15 +1190,15 @@ class TemporalProximityGroups:
     def uid_to_row(self, uid: bytes) -> int:
         return self.uids.uid_to_col2_row(uid=uid)
 
-    def row_uids(self, row: int) -> List[bytes]:
+    def row_uids(self, row: int) -> list[bytes]:
         return self.uids[row, 2]
 
 
 class TemporalProximityModel(QAbstractTableModel):
-    tooltip_image_size = QSize(90, 90)  # FIXME high DPI?
+    tooltip_image_size = QSize(90, 90)
 
     def __init__(
-        self, rapidApp, groups: TemporalProximityGroups = None, parent=None
+        self, rapidApp, groups: TemporalProximityGroups | None = None, parent=None
     ) -> None:
         super().__init__(parent)
         self.rapidApp = rapidApp
@@ -1228,6 +1224,60 @@ class TemporalProximityModel(QAbstractTableModel):
         else:
             return 0
 
+    def generateToolTip(
+        self, row: int, column: int, proximity_row: ProximityRow
+    ) -> str | None:
+        thumbnails = self.rapidApp.thumbnailModel.thumbnails
+
+        try:
+            match column:
+                case 1:
+                    uids = self.groups.uids.uids(1)[row]
+                    length = self.groups.uids.no_uids((row, 1))
+                    date = proximity_row.tooltip_date_col1
+                    file_types = (
+                        self.rapidApp.thumbnailModel.getTypeCountForProximityCell(
+                            col1id=self.groups.proximity_view_cell_id_col1[row]
+                        )
+                    )
+                case 2:
+                    prow = self.groups.row_span_for_column_starts_at_row[(row, 2)]
+                    uids = self.groups.uids.uids(2)[prow]
+                    length = self.groups.uids.no_uids((prow, 2))
+                    date = proximity_row.tooltip_date_col2
+                    file_types = (
+                        self.rapidApp.thumbnailModel.getTypeCountForProximityCell(
+                            col2id=self.groups.proximity_view_cell_id_col2[prow]
+                        )
+                    )
+                case _:
+                    assert column == 0
+                    uids = self.groups.uids.uids(0)[row]
+                    length = self.groups.uids.no_uids((row, 0))
+                    date = proximity_row.tooltip_date_col0
+                    file_types = self.groups.file_types_in_cell[row, column]
+
+        except KeyError:
+            logging.exception("Error in Timeline generation")
+            self.debugDumpState()
+            return None
+
+        pixmap = thumbnails[uids[0]]  # type: QPixmap
+
+        image = base64_thumbnail(pixmap, self.tooltip_image_size)
+        html_image1 = f'<img src="data:image/png;base64,{image}">'
+
+        if length == 1:
+            center = html_image2 = ""
+        else:
+            pixmap = thumbnails[uids[-1]]  # type: QPixmap
+            image = base64_thumbnail(pixmap, self.tooltip_image_size)
+            center = "&nbsp;" if length == 2 else "&nbsp;&hellip;&nbsp;"
+            html_image2 = f'<img src="data:image/png;base64,{image}">'
+
+        tooltip = f"{date}<br>{html_image1} {center} {html_image2}<br>{file_types}"
+        return tooltip
+
     def data(self, index: QModelIndex, role=Qt.DisplayRole):
         if not index.isValid():
             return None
@@ -1241,89 +1291,38 @@ class TemporalProximityModel(QAbstractTableModel):
             return None
         proximity_row = self.groups[row]  # type: ProximityRow
 
-        if role == Qt.DisplayRole:
-            invalid_row = self.show_debug and row in self.groups.invalid_rows
-            invalid_rows = (
-                self.show_debug
-                and len(self.groups.invalid_rows) > 0
-                or self.force_show_debug
-            )
-            if column == 0:
-                return proximity_row.year, proximity_row.month
-            elif column == 1:
-                return proximity_row.weekday, proximity_row.day
-            else:
-                return (
-                    proximity_row.proximity,
-                    proximity_row.new_file,
-                    invalid_row,
-                    invalid_rows,
+        match role:
+            case Qt.DisplayRole:
+                invalid_row = self.show_debug and row in self.groups.invalid_rows
+                invalid_rows = (
+                    self.show_debug
+                    and len(self.groups.invalid_rows) > 0
+                    or self.force_show_debug
                 )
-
-        elif role == Roles.uids:
-            prow = self.groups.row_span_for_column_starts_at_row[(row, 2)]
-            uids = self.groups.uids.uids(2)[prow]
-            return uids
-
-        elif role == Qt.ToolTipRole:
-            thumbnails = self.rapidApp.thumbnailModel.thumbnails
-
-            try:
-
-                if column == 1:
-                    uids = self.groups.uids.uids(1)[row]
-                    length = self.groups.uids.no_uids((row, 1))
-                    date = proximity_row.tooltip_date_col1
-                    file_types = (
-                        self.rapidApp.thumbnailModel.getTypeCountForProximityCell(
-                            col1id=self.groups.proximity_view_cell_id_col1[row]
+                match column:
+                    case 0:
+                        return proximity_row.year, proximity_row.month
+                    case 1:
+                        return proximity_row.weekday, proximity_row.day
+                    case _:
+                        return (
+                            proximity_row.proximity,
+                            proximity_row.new_file,
+                            invalid_row,
+                            invalid_rows,
                         )
-                    )
-                elif column == 2:
-                    prow = self.groups.row_span_for_column_starts_at_row[(row, 2)]
-                    uids = self.groups.uids.uids(2)[prow]
-                    length = self.groups.uids.no_uids((prow, 2))
-                    date = proximity_row.tooltip_date_col2
-                    file_types = (
-                        self.rapidApp.thumbnailModel.getTypeCountForProximityCell(
-                            col2id=self.groups.proximity_view_cell_id_col2[prow]
-                        )
-                    )
-                else:
-                    assert column == 0
-                    uids = self.groups.uids.uids(0)[row]
-                    length = self.groups.uids.no_uids((row, 0))
-                    date = proximity_row.tooltip_date_col0
-                    file_types = self.groups.file_types_in_cell[row, column]
 
-            except KeyError as e:
-                logging.exception("Error in Timeline generation")
-                self.debugDumpState()
-                return None
+            case Roles.uids:
+                prow = self.groups.row_span_for_column_starts_at_row[(row, 2)]
+                uids = self.groups.uids.uids(2)[prow]
+                return uids
 
-            pixmap = thumbnails[uids[0]]  # type: QPixmap
-
-            image = base64_thumbnail(pixmap, self.tooltip_image_size)
-            html_image1 = f'<img src="data:image/png;base64,{image}">'
-
-            if length == 1:
-                center = html_image2 = ""
-            else:
-                pixmap = thumbnails[uids[-1]]  # type: QPixmap
-                image = base64_thumbnail(pixmap, self.tooltip_image_size)
-                if length == 2:
-                    center = "&nbsp;"
-                else:
-                    center = "&nbsp;&hellip;&nbsp;"
-                html_image2 = f'<img src="data:image/png;base64,{image}">'
-
-            tooltip = f"{date}<br>{html_image1} {center} {html_image2}<br>{file_types}"
-            return tooltip
+            case Qt.ToolTipRole:
+                return self.generateToolTip(row, column, proximity_row)
 
     def debugDumpState(
-        self, selected_rows_col1: List[int] = None, selected_rows_col2: List[int] = None
+        self, selected_rows_col1: list[int] = None, selected_rows_col2: list[int] = None
     ) -> None:
-
         thumbnailModel = self.rapidApp.thumbnailModel
         logging.debug("%r", self.groups)
 
@@ -1336,20 +1335,21 @@ class TemporalProximityModel(QAbstractTableModel):
                     if row in self.groups.uids._uids[col]:
                         uids = self.groups.uids._uids[col][row]
                         files = ", ".join(
-                            (thumbnailModel.rpd_files[uid].name for uid in uids)
+                            thumbnailModel.rpd_files[uid].name for uid in uids
                         )
                         logging.debug(f"Col {col}: {files}")
 
-    def updatePreviouslyDownloaded(self, uids: List[bytes]) -> None:
+    def updatePreviouslyDownloaded(self, uids: list[bytes]) -> None:
         """
         Examine Timeline data to see if any Timeline rows should have their column 2
         formatting updated to reflect that there are no new files to be downloaded in
-        that particular row
+        that particular row.
+
         :param uids: list of uids that have been manually marked as previously
         downloaded
         """
 
-        processed_rows = set()  # type: Set[int]
+        processed_rows = set()  # type: set[int]
         rows_to_update = []
         for uid in uids:
             row = self.groups.uid_to_row(uid=uid)
@@ -1394,7 +1394,8 @@ class TemporalProximityDelegate(QStyledItemDelegate):
 
         self.darkGray = QColor(DarkGray)
         self.darkerGray = self.darkGray.darker(140)
-        # self.darkerGray = QColor(DoubleDarkGray)
+        self.darkGrayMouseover = self.darkGray.lighter(120)
+        self.darkerGrayMouseover = self.darkerGray.lighter(120)
         self.midGray = QColor(MediumGray)
 
         # column 2 cell color is assigned in ProximityDisplayValues
@@ -1402,11 +1403,14 @@ class TemporalProximityDelegate(QStyledItemDelegate):
         palette = QGuiApplication.instance().palette()
         self.highlight = palette.highlight().color()
         self.darkerHighlight = self.highlight.darker(110)
+        self.highlightMouseover = self.highlight.lighter(120)
+        self.darkerHighlightMouseover = self.darkerHighlight.lighter(120)
+
         self.highlightText = palette.highlightedText().color()
 
         self.newFileColor = QColor(CustomColors.color7.value)
 
-        self.dv = None  # type: Optional[ProximityDisplayValues]
+        self.dv = None  # type: ProximityDisplayValues | None
 
     def paint(
         self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
@@ -1415,211 +1419,243 @@ class TemporalProximityDelegate(QStyledItemDelegate):
         column = index.column()
         optionRectF = QRectF(option.rect)
 
-        if column == 0:
-            # Month and year
-            painter.save()
+        match column:
+            case 0:
+                # Month and year
+                painter.save()
 
-            if option.state & QStyle.State_Selected:
-                color = self.highlight
-                textColor = self.highlightText
-                barColor = self.darkerHighlight
-            else:
-                color = self.darkGray
-                textColor = self.dv.tableColor
-                barColor = self.darkerGray
-            painter.fillRect(optionRectF, color)
-            painter.setPen(textColor)
-
-            year, month = index.data()
-
-            month = self.dv.get_month_text(month, year)
-
-            x = optionRectF.x()
-            y = optionRectF.y()
-
-            painter.setFont(self.dv.monthFont)
-            painter.setPen(textColor)
-
-            # Set position in the cell
-            painter.translate(x, y)
-            # Rotate the coming text rendering
-            painter.rotate(270.0)
-
-            # Translate positioning to reflect new rotation
-            painter.translate(-1 * optionRectF.height(), 0)
-            rect = QRectF(0, 0, optionRectF.height(), optionRectF.width())
-
-            painter.drawText(rect, Qt.AlignCenter, month)
-
-            painter.setPen(barColor)
-            painter.drawLine(QLineF(1.0, 0.0, 1.0, (optionRectF.width())))
-
-            painter.restore()
-
-        elif column == 1:
-            # Day of the month
-            painter.save()
-
-            if option.state & QStyle.State_Selected:
-                color = self.highlight
-                weekdayColor = self.highlightText
-                dayColor = self.highlightText
-                barColor = self.darkerHighlight
-            else:
-                color = self.darkGray
-                weekdayColor = QColor(221, 221, 221)
-                dayColor = QColor(Qt.white)
-                barColor = self.darkerGray
-
-            painter.fillRect(optionRectF, color)
-            weekday, day = index.data()
-            weekday = weekday.upper()
-            width = optionRectF.width()
-            height = optionRectF.height()
-
-            painter.translate(optionRectF.x(), optionRectF.y())
-            weekday_rect_bottom = (
-                height / 2 - self.dv.max_col1_text_height * self.dv.day_proportion
-            ) + self.dv.max_weekday_height
-            weekdayRect = QRectF(0, 0, width, weekday_rect_bottom)
-            day_rect_top = weekday_rect_bottom + self.dv.col1_center_space
-            dayRect = QRectF(0, day_rect_top, width, height - day_rect_top)
-
-            painter.setFont(self.dv.weekdayFont)
-            painter.setPen(weekdayColor)
-            painter.drawText(weekdayRect, Qt.AlignHCenter | Qt.AlignBottom, weekday)
-            painter.setFont(self.dv.dayFont)
-            painter.setPen(dayColor)
-            painter.drawText(dayRect, Qt.AlignHCenter | Qt.AlignTop, day)
-
-            if row in self.dv.c1_end_of_month:
-                painter.setPen(barColor)
-                painter.drawLine(
-                    QLineF(
-                        0,
-                        optionRectF.height() - 1,
-                        optionRectF.width(),
-                        optionRectF.height() - 1,
-                    )
-                )
-
-            painter.restore()
-
-        elif column == 2:
-            # Time during the day
-            text, new_file, invalid_row, invalid_rows = index.data()
-
-            painter.save()
-
-            if invalid_row:
-                color = self.darkGray
-                textColor = QColor(Qt.white)
-            elif option.state & QStyle.State_Selected:
-                color = self.highlight
-                # TODO take into account dark themes
-                if new_file:
+                if option.state & QStyle.State_Selected:
+                    if option.state & QStyle.State_MouseOver:
+                        color = self.highlightMouseover
+                        barColor = self.darkerHighlightMouseover
+                    else:
+                        color = self.highlight
+                        barColor = self.darkerHighlight
                     textColor = self.highlightText
                 else:
-                    textColor = self.darkGray
-            else:
-                color = self.dv.tableColor
-                if new_file:
-                    textColor = QColor(Qt.white)
-                else:
-                    textColor = self.darkGray
+                    if option.state & QStyle.State_MouseOver:
+                        color = self.darkGrayMouseover
+                        barColor = self.darkerGrayMouseover
+                    else:
+                        color = self.darkGray
+                        barColor = self.darkerGray
+                    textColor = self.dv.tableColor
 
-            painter.fillRect(optionRectF, color)
+                painter.fillRect(optionRectF, color)
+                painter.setPen(textColor)
 
-            align = self.dv.c2_alignment.get(row)
+                year, month = index.data()
 
-            if new_file and self.dv.col2_new_file_dot:
-                # Draw a small circle beside the date (currently unused)
-                painter.setPen(self.newFileColor)
-                painter.setRenderHint(QPainter.Antialiasing)
-                painter.setBrush(self.newFileColor)
-                rect = QRectF(
-                    optionRectF.x(),
-                    optionRectF.y(),
-                    self.dv.col2_new_file_dot_size,
-                    self.dv.col2_new_file_dot_size,
-                )
-                if align is None:
-                    height = (
-                        optionRectF.height() / 2
-                        - self.dv.col2_new_file_dot_radius
-                        - self.dv.col2_font_descent_adjust
-                    )
-                    rect.translate(self.dv.col2_new_file_dot_left_margin, height)
-                elif align == Align.bottom:
-                    height = (
-                        optionRectF.height()
-                        - self.dv.col2_font_height_half
-                        - self.dv.col2_font_descent_adjust
-                        - self.dv.col2_new_file_dot_size
-                    )
-                    rect.translate(self.dv.col2_new_file_dot_left_margin, height)
-                else:
-                    height = (
-                        self.dv.col2_font_height_half - self.dv.col2_font_descent_adjust
-                    )
-                    rect.translate(self.dv.col2_new_file_dot_left_margin, height)
-                painter.drawEllipse(rect)
+                month = self.dv.get_month_text(month, year)
 
-            rect = optionRectF.translated(self.dv.col2_text_left_margin, 0)
+                x = optionRectF.x()
+                y = optionRectF.y()
 
-            painter.setPen(textColor)
+                painter.setFont(self.dv.monthFont)
+                painter.setPen(textColor)
 
-            if invalid_rows:
-                # Render the row
-                invalidRightRect = QRectF(optionRectF)
-                invalidRightRect.translate(-2, 1)
-                painter.setFont(self.dv.invalidRowFont)
-                painter.drawText(
-                    invalidRightRect, Qt.AlignRight | Qt.AlignTop, str(row)
-                )
-                if (
-                    align != Align.top
-                    and self.dv.invalidRowHeightMin < option.rect.height()
-                ):
-                    invalidLeftRect = QRectF(option.rect)
-                    invalidLeftRect.translate(1, 1)
-                    painter.drawText(
-                        invalidLeftRect, Qt.AlignLeft | Qt.AlignTop, "Debug mode"
-                    )
+                # Set position in the cell
+                painter.translate(x, y)
+                # Rotate the coming text rendering
+                painter.rotate(270.0)
 
-            painter.setFont(self.dv.proximityFont)
+                # Translate positioning to reflect new rotation
+                painter.translate(-1 * optionRectF.height(), 0)
+                rect = QRectF(0, 0, optionRectF.height(), optionRectF.width())
 
-            if align is None:
-                painter.drawText(rect, Qt.AlignLeft | Qt.AlignVCenter, text)
-            elif align == Align.bottom:
-                rect.setHeight(rect.height() - self.dv.col2_v_padding_half)
-                painter.drawText(rect, Qt.AlignLeft | Qt.AlignBottom, text)
-            else:
-                rect.adjust(0, self.dv.col2_v_padding_half, 0, 0)
-                painter.drawText(rect, Qt.AlignLeft | Qt.AlignTop, text)
+                painter.drawText(rect, Qt.AlignCenter, month)
 
-            if row in self.dv.c2_end_of_day:
+                painter.setPen(barColor)
+                painter.drawLine(QLineF(1.0, 0.0, 1.0, (optionRectF.width())))
+
+                painter.restore()
+
+            case 1:
+                # Day of the month
+                painter.save()
+
                 if option.state & QStyle.State_Selected:
-                    painter.setPen(self.darkerHighlight)
+                    if option.state & QStyle.State_MouseOver:
+                        color = self.highlightMouseover
+                        barColor = self.darkerHighlightMouseover
+                    else:
+                        color = self.highlight
+                        barColor = self.darkerHighlight
+                    weekdayColor = self.highlightText
+                    dayColor = self.highlightText
                 else:
-                    painter.setPen(self.dv.tableColorDarker)
-                painter.translate(optionRectF.x(), optionRectF.y())
-                painter.drawLine(
-                    QLineF(
-                        0.0,
-                        optionRectF.height() - 1,
-                        self.dv.col_widths[2],
-                        optionRectF.height() - 1,
-                    )
-                )
+                    if option.state & QStyle.State_MouseOver:
+                        color = self.darkGrayMouseover
+                        barColor = self.darkerGrayMouseover
+                    else:
+                        color = self.darkGray
+                        barColor = self.darkerGray
+                    weekdayColor = QColor(221, 221, 221)
+                    dayColor = QColor(Qt.white)
 
-            painter.restore()
-        else:
-            super().paint(painter, option, index)
+                painter.fillRect(optionRectF, color)
+                weekday, day = index.data()
+                weekday = weekday.upper()
+                width = optionRectF.width()
+                height = optionRectF.height()
+
+                painter.translate(optionRectF.x(), optionRectF.y())
+                weekday_rect_bottom = (
+                    height / 2 - self.dv.max_col1_text_height * self.dv.day_proportion
+                ) + self.dv.max_weekday_height
+                weekdayRect = QRectF(0, 0, width, weekday_rect_bottom)
+                day_rect_top = weekday_rect_bottom + self.dv.col1_center_space
+                dayRect = QRectF(0, day_rect_top, width, height - day_rect_top)
+
+                painter.setFont(self.dv.weekdayFont)
+                painter.setPen(weekdayColor)
+                painter.drawText(weekdayRect, Qt.AlignHCenter | Qt.AlignBottom, weekday)
+                painter.setFont(self.dv.dayFont)
+                painter.setPen(dayColor)
+                painter.drawText(dayRect, Qt.AlignHCenter | Qt.AlignTop, day)
+
+                if row in self.dv.c1_end_of_month:
+                    painter.setPen(barColor)
+                    painter.drawLine(
+                        QLineF(
+                            0,
+                            optionRectF.height() - 1,
+                            optionRectF.width(),
+                            optionRectF.height() - 1,
+                        )
+                    )
+
+                painter.restore()
+
+            case 2:
+                # Time during the day
+                text, new_file, invalid_row, invalid_rows = index.data()
+
+                painter.save()
+
+                if invalid_row:
+                    color = self.darkGray
+                    textColor = QColor(Qt.white)
+                elif option.state & QStyle.State_Selected:
+                    if option.state & QStyle.State_MouseOver:
+                        color = self.highlightMouseover
+                    else:
+                        color = self.highlight
+                    # TODO take into account dark themes
+                    textColor = self.highlightText if new_file else self.darkGray
+                else:
+                    if option.state & QStyle.State_MouseOver:
+                        color = self.dv.tableColorMouseover
+                    else:
+                        color = self.dv.tableColor
+                    textColor = QColor(Qt.white) if new_file else self.darkGray
+
+                painter.fillRect(optionRectF, color)
+
+                align = self.dv.c2_alignment.get(row)
+
+                if new_file and self.dv.col2_new_file_dot:
+                    # Draw a small circle beside the date (currently unused)
+                    painter.setPen(self.newFileColor)
+                    painter.setRenderHint(QPainter.Antialiasing)
+                    painter.setBrush(self.newFileColor)
+                    rect = QRectF(
+                        optionRectF.x(),
+                        optionRectF.y(),
+                        self.dv.col2_new_file_dot_size,
+                        self.dv.col2_new_file_dot_size,
+                    )
+                    match align:
+                        case None:
+                            height = (
+                                optionRectF.height() / 2
+                                - self.dv.col2_new_file_dot_radius
+                                - self.dv.col2_font_descent_adjust
+                            )
+                            rect.translate(
+                                self.dv.col2_new_file_dot_left_margin, height
+                            )
+                        case Align.bottom:
+                            height = (
+                                optionRectF.height()
+                                - self.dv.col2_font_height_half
+                                - self.dv.col2_font_descent_adjust
+                                - self.dv.col2_new_file_dot_size
+                            )
+                            rect.translate(
+                                self.dv.col2_new_file_dot_left_margin, height
+                            )
+                        case _:
+                            height = (
+                                self.dv.col2_font_height_half
+                                - self.dv.col2_font_descent_adjust
+                            )
+                            rect.translate(
+                                self.dv.col2_new_file_dot_left_margin, height
+                            )
+                    painter.drawEllipse(rect)
+
+                rect = optionRectF.translated(self.dv.col2_text_left_margin, 0)
+
+                painter.setPen(textColor)
+
+                if invalid_rows:
+                    # Render the row
+                    invalidRightRect = QRectF(optionRectF)
+                    invalidRightRect.translate(-2, 1)
+                    painter.setFont(self.dv.invalidRowFont)
+                    painter.drawText(
+                        invalidRightRect, Qt.AlignRight | Qt.AlignTop, str(row)
+                    )
+                    if (
+                        align != Align.top
+                        and self.dv.invalidRowHeightMin < option.rect.height()
+                    ):
+                        invalidLeftRect = QRectF(option.rect)
+                        invalidLeftRect.translate(1, 1)
+                        painter.drawText(
+                            invalidLeftRect, Qt.AlignLeft | Qt.AlignTop, "Debug mode"
+                        )
+
+                painter.setFont(self.dv.proximityFont)
+
+                match align:
+                    case None:
+                        painter.drawText(rect, Qt.AlignLeft | Qt.AlignVCenter, text)
+                    case Align.bottom:
+                        rect.setHeight(rect.height() - self.dv.col2_v_padding_half)
+                        painter.drawText(rect, Qt.AlignLeft | Qt.AlignBottom, text)
+                    case _:
+                        rect.adjust(0, self.dv.col2_v_padding_half, 0, 0)
+                        painter.drawText(rect, Qt.AlignLeft | Qt.AlignTop, text)
+
+                if row in self.dv.c2_end_of_day:
+                    if option.state & QStyle.State_Selected:
+                        if option.state & QStyle.State_MouseOver:
+                            painter.setPen(self.darkerHighlightMouseover)
+                        else:
+                            painter.setPen(self.darkerHighlight)
+                    else:
+                        if option.state & QStyle.State_MouseOver:
+                            painter.setPen(self.dv.tableColorMouseoverDarker)
+                        else:
+                            painter.setPen(self.dv.tableColorDarker)
+                    painter.translate(optionRectF.x(), optionRectF.y())
+                    painter.drawLine(
+                        QLineF(
+                            0.0,
+                            optionRectF.height() - 1,
+                            self.dv.col_widths[2],
+                            optionRectF.height() - 1,
+                        )
+                    )
+
+                painter.restore()
+            case _:
+                super().paint(painter, option, index)
 
 
 class TemporalProximityView(QTableView):
-
     proximitySelectionHasChanged = pyqtSignal()
 
     def __init__(self, temporalProximityWidget: "TemporalProximity", rapidApp) -> None:
@@ -1634,11 +1670,12 @@ class TemporalProximityView(QTableView):
         self.setWordWrap(True)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        # Vertical scrollbar the user sees belongs to the left panel scroll area
+        # The vertical scrollbar the user sees belongs to the left panel scroll area
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setShowGrid(False)
         self.setFrameShape(QFrame.NoFrame)
         self.frame_width = QApplication.style().pixelMetric(QStyle.PM_DefaultFrameWidth)
+        self.viewport().setAttribute(Qt.WA_Hover)  # Enable mouse over tracking
 
     def contentHeight(self) -> int:
         return self.verticalHeader().length()
@@ -1801,7 +1838,7 @@ class TemporalProximityView(QTableView):
                 column = i.column()
                 row = i.row()
                 # Is any selected column to the left of clicked column?
-                if column < clicked_column:
+                if column < clicked_column:  # noqa: SIM102
                     # Is the row outside the span of the clicked row?
                     if (
                         row < clicked_row
@@ -1842,7 +1879,7 @@ class TemporalProximityView(QTableView):
         point = self._temporalProximityPosition(0)
         return point.y() <= self.frame_width
 
-    def getFirstVisibleRowUids(self) -> Optional[List[bytes]]:
+    def getFirstVisibleRowUids(self) -> list[bytes] | None:
         x = 200
         point = self._temporalProximityPosition(x)
         # a negative value for y means the top of the timeline is above the visible area
@@ -1853,12 +1890,11 @@ class TemporalProximityView(QTableView):
         # with the top of the viewport:
         index = self.indexAt(QPoint(x, y + 1))  # type: QModelIndex
         if index.isValid():
-            if self.selectedIndexes():
-                # It's now possible to scroll the Timeline and there will be
-                # no matching thumbnails to which to scroll to in the display,
-                # because they are not being displayed. Hence this check:
-                if not index in self.selectedIndexes():
-                    return None
+            # It's now possible to scroll the Timeline, and there will be
+            # no matching thumbnails to which to scroll to in the display,
+            # because they are not being displayed. Hence this check:
+            if self.selectedIndexes() and index not in self.selectedIndexes():
+                return None
             return self.model().data(index, Roles.uids)
 
     @pyqtSlot(int)
@@ -1876,7 +1912,7 @@ class TemporalProximityViewFramed(TightFlexiFrame):
     def __init__(
         self,
         temporalProximityView: TemporalProximityView,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(render_top_edge=True, parent=parent)
         self.layout().addWidget(temporalProximityView)
@@ -1909,13 +1945,11 @@ class TemporalValuePicker(QWidget):
         self.display.setFont(font)
         self.display.setAlignment(Qt.AlignCenter)
 
-        # Determine maximum width of display label
+        # Determine the maximum width of display label
         width = 0
         labelMetrics = QFontMetricsF(QFont())
         for m in range(len(proximity_time_steps)):
-            boundingRect = labelMetrics.boundingRect(
-                self.displayString(m)
-            )  # type: QRect
+            boundingRect = labelMetrics.boundingRect(self.displayString(m))  # type: QRect
             width = max(width, boundingRect.width())
 
         self.display.setFixedWidth(round(width) + 6)
@@ -1975,7 +2009,7 @@ class ResizableStackedWidget(QStackedWidget):
     Timeline.
     """
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent=parent)
         self.currentChanged.connect(self.onCurrentChanged)
 
@@ -2011,7 +2045,7 @@ class TemporalProximityExplanation(QWidget):
     """
 
     def __init__(
-        self, description: QLabel, adjust: QLabel, parent: Optional[QWidget] = None
+        self, description: QLabel, adjust: QLabel, parent: QWidget | None = None
     ) -> None:
         super().__init__(parent=parent)
         self.explanation = QWidget()
@@ -2084,11 +2118,11 @@ class TemporalProximity(QWidget):
 
         self.state = TemporalProximityState.empty
 
-        self.uids_manually_set_previously_downloaded = []  # type: List[bytes]
+        self.uids_manually_set_previously_downloaded = []  # type: list[bytes]
 
         # Track which uid to make visible in the Timeline when it has been
         # regenerated due to a value change using the slider
-        self.uid_to_scroll_to_post_value_change = None  # type: Optional[bytes]
+        self.uid_to_scroll_to_post_value_change = None  # type: bytes|None
 
         self.temporalProximityView = TemporalProximityView(self, rapidApp=rapidApp)
         self.temporalProximityModel = TemporalProximityModel(rapidApp=rapidApp)
@@ -2190,7 +2224,6 @@ class TemporalProximity(QWidget):
         return (self.stackedWidget.widget(i) for i in range(self.stackedWidget.count()))
 
     def setupExplanations(self, width: int) -> None:
-
         for label in (
             self.description,
             self.generationPending,
@@ -2258,7 +2291,7 @@ class TemporalProximity(QWidget):
             selected_col2 = [
                 groups.proximity_view_cell_id_col2[row] for row in selected_rows_col2
             ]
-        except KeyError as e:
+        except KeyError:
             logging.exception("Error in Timeline generation")
             self.temporalProximityModel.debugDumpState(
                 selected_rows_col1, selected_rows_col2
@@ -2398,7 +2431,7 @@ class TemporalProximity(QWidget):
 
         return True
 
-    def previouslyDownloadedManuallySet(self, uids: List[bytes]) -> None:
+    def previouslyDownloadedManuallySet(self, uids: list[bytes]) -> None:
         """
         Possibly update the formatting of the Timeline to reflect the user
         manually setting files to have been previously downloaded
@@ -2419,7 +2452,7 @@ class TemporalProximity(QWidget):
         if uids:
             self.uid_to_scroll_to_post_value_change = uids[0]
 
-    def scrollToUid(self, uid: bytes, on_value_change: Optional[bool] = False) -> None:
+    def scrollToUid(self, uid: bytes, on_value_change: bool | None = False) -> None:
         """
         Scroll to this uid in the Timeline.
 
@@ -2505,12 +2538,17 @@ class SyncIcon(QIcon):
         size = round(16 * scaling)
         size = QSize(size, size)
 
-        if state == SyncButtonState.active:
-            on = coloredPixmap(path=path, color=CustomColors.color1.value, size=size)
-        elif state == SyncButtonState.inactive:
-            on = coloredPixmap(path=path, color=CustomColors.color2.value, size=size)
-        else:
-            on = darkModePixmap(path=path, size=size)
+        match state:
+            case SyncButtonState.active:
+                on = coloredPixmap(
+                    path=path, color=CustomColors.color1.value, size=size
+                )
+            case SyncButtonState.inactive:
+                on = coloredPixmap(
+                    path=path, color=CustomColors.color2.value, size=size
+                )
+            case _:
+                on = darkModePixmap(path=path, size=size)
 
         if on_hover:
             if is_dark_mode():
@@ -2529,7 +2567,7 @@ class SyncIcon(QIcon):
 
 
 class SyncButton(QPushButton):
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent=parent)
 
         try:
@@ -2587,9 +2625,7 @@ class SyncButton(QPushButton):
             QPushButton::hover {
                 background-color: %s;
             }
-            """ % (
-            hoverColor
-        )
+            """ % (hoverColor)
         self.setStyleSheet(style)
         self.installEventFilter(self)
 
@@ -2603,12 +2639,13 @@ class SyncButton(QPushButton):
         """
 
         if not self.isChecked():
-            if event.type() == QEvent.Enter:
-                self.setIcon(self.regularIconHover)
-                return True
-            elif event.type() == QEvent.Leave:
-                self.setIcon(self.state_mapper[self.icon_state])
-                return True
+            match event.type():
+                case QEvent.Enter:
+                    self.setIcon(self.regularIconHover)
+                    return True
+                case QEvent.Leave:
+                    self.setIcon(self.state_mapper[self.icon_state])
+                    return True
         return super().eventFilter(source, event)
 
 
@@ -2656,15 +2693,16 @@ class TemporalProximityControls(QWidget):
     @pyqtSlot(int)
     def temporalValueChanged(self, minutes: int) -> None:
         self.prefs.set_proximity(minutes=minutes)
-        if self.temporalProximity.state == TemporalProximityState.generated:
-            if self.autoScrollButton.icon_state == SyncButtonState.active:
-                self.temporalProximity.setThumbnailToScrollTo()
-            self.temporalProximity.setState(TemporalProximityState.generating)
-            self.rapidApp.generateTemporalProximityTableData(
-                reason="the duration between consecutive shots has changed"
-            )
-        elif self.temporalProximity.state == TemporalProximityState.generating:
-            self.temporalProximity.state = TemporalProximityState.regenerate
+        match self.temporalProximity.state:
+            case TemporalProximityState.generated:
+                if self.autoScrollButton.icon_state == SyncButtonState.active:
+                    self.temporalProximity.setThumbnailToScrollTo()
+                self.temporalProximity.setState(TemporalProximityState.generating)
+                self.rapidApp.generateTemporalProximityTableData(
+                    reason="the duration between consecutive shots has changed"
+                )
+            case TemporalProximityState.generating:
+                self.temporalProximity.state = TemporalProximityState.regenerate
 
     @pyqtSlot(bool)
     def sourceScrollBarVisible(self, visible: bool) -> None:

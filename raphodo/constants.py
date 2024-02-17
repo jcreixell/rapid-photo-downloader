@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2022 Damon Lynch <damonlynch@gmail.com>
+# Copyright (C) 2007-2024 Damon Lynch <damonlynch@gmail.com>
 
 # This file is part of Rapid Photo Downloader.
 #
@@ -18,35 +18,20 @@
 # see <http://www.gnu.org/licenses/>.
 
 __author__ = "Damon Lynch"
-__copyright__ = "Copyright 2007-2022, Damon Lynch"
+__copyright__ = "Copyright 2007-2024, Damon Lynch"
 
-from enum import Enum, IntEnum, auto
+from enum import Enum, Flag, IntEnum, auto
+
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QFontMetrics, QColor
+from PyQt5.QtGui import QColor, QFont, QFontMetrics
 
 PROGRAM_NAME = "Rapid Photo Downloader"
 logfile_name = "rapid-photo-downloader.log"
 
-remote_versions_file = "https://damonlynch.net/rapid/version.json"
 
 # If set to True, the ability to check for a new version will be removed
 # from the user interface and disabled in program logic.
 disable_version_check = False
-
-
-class CheckNewVersionDialogResult(IntEnum):
-    download = 1
-    do_not_download = 2
-    skip = 3
-    open_website = 4
-
-
-class CheckNewVersionDialogState(IntEnum):
-    check = 1
-    prompt_for_download = 2
-    open_website = 3
-    failed_to_contact = 4
-    have_latest_version = 5
 
 
 class ConflictResolution(IntEnum):
@@ -68,13 +53,14 @@ class PresetPrefType(Enum):
 
 
 class PresetClass(Enum):
-    builtin = 1
-    custom = 2
-    new_preset = 3
-    remove_all = 4
-    update_preset = 5
-    edited = 6
-    start_editor = 7
+    builtin = auto()
+    custom = auto()
+    new_preset = auto()
+    remove_all = auto()
+    update_preset = auto()
+    remove_preset = auto()
+    edited = auto()
+    start_editor = auto()
 
 
 class DownloadStatus(Enum):
@@ -167,7 +153,11 @@ class DisplayingFilesOfType(Enum):
 
 BackupLocationType = DisplayingFilesOfType
 BackupFailureType = DisplayingFilesOfType
-DownloadingFileTypes = DisplayingFilesOfType
+
+
+class FileTypeFlag(Flag):
+    PHOTOS = auto()
+    VIDEOS = auto()
 
 
 class WindowsDriveType(IntEnum):
@@ -383,9 +373,12 @@ class NameGenerationType(Enum):
     video_subfolder = 4
 
 
+COLOR_RED_HTML = "#cb493f"
+
+
 class CustomColors(Enum):
     color1 = "#7a9c38"  # green
-    color2 = "#cb493f"  # red
+    color2 = COLOR_RED_HTML  # red
     color3 = "#d17109"  # orange
     color4 = "#4D8CDC"  # blue
     color5 = "#5f6bfe"  # purple
@@ -525,7 +518,6 @@ def standardProgressBarWidth() -> int:
     return int(QFontMetrics(QFont()).height() * 20)
 
 
-# Sync with value in install.py
 class Distro(Enum):
     debian = auto()
     ubuntu = auto()
