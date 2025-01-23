@@ -1,27 +1,9 @@
-# Copyright (C) 2017-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Copyright 2017-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 Display photo and video sources -- Devices and This Computer, as well as the Timeline
 """
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2017-2024, Damon Lynch"
 
 import logging
 
@@ -29,8 +11,11 @@ from PyQt5.QtCore import QPoint, QSettings, Qt, pyqtSlot
 from PyQt5.QtWidgets import QApplication, QSizePolicy, QStyle, QVBoxLayout, QWidget
 
 from raphodo.constants import TemporalProximityState
+from raphodo.internationalisation.install import install_gettext
 from raphodo.proximity import TemporalProximityControls
 from raphodo.ui.viewutils import ScrollAreaNoFrame, SourceSplitter
+
+install_gettext()
 
 
 class SourcePanel(ScrollAreaNoFrame):
@@ -119,7 +104,7 @@ class SourcePanel(ScrollAreaNoFrame):
             QSizePolicy.Preferred, QSizePolicy.MinimumExpanding
         )
 
-        layout = self.sourcePanelWidget.layout()  # type: QVBoxLayout
+        layout: QVBoxLayout = self.sourcePanelWidget.layout()
         layout.addWidget(self.deviceToggleView, 0)
 
         for widget in (
@@ -148,7 +133,7 @@ class SourcePanel(ScrollAreaNoFrame):
         #   if TC on, TC and TL in splitter, splitter showing
         #   if TC off, TC and TL in panel, splitter hidden
 
-        layout = self.sourcePanelWidget.layout()  # type: QVBoxLayout
+        layout: QVBoxLayout = self.sourcePanelWidget.layout()
         if not self.needSplitter():
             if self.splitter.isVisible():
                 self.settings.setValue(

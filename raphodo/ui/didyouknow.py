@@ -1,28 +1,9 @@
-# Copyright (C) 2017-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Copyright 2017-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 Show 'Did you know?' dialog at start-up
 """
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2017-2024, Damon Lynch"
-
 
 from PyQt5.QtCore import QSettings, QSize, Qt, pyqtSlot
 from PyQt5.QtGui import (
@@ -30,7 +11,7 @@ from PyQt5.QtGui import (
     QFont,
     QFontMetrics,
     QIcon,
-    QPixmap,  # noqa: F401
+    QPixmap,
     QShowEvent,
     QTextCursor,
 )
@@ -46,13 +27,17 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
 )
 
+from raphodo.internationalisation.install import install_gettext
 from raphodo.prefs.preferences import Preferences
+from raphodo.tools.utilities import data_file_path
 from raphodo.ui.viewutils import translateDialogBoxButtons
+
+install_gettext()
 
 tips = (
     (
         _("Click on a file's checkbox to mark or unmark it for download."),
-        ":/tips/marksingle.png",
+        "tips/marksingle.png",
     ),
     (
         _(
@@ -61,7 +46,7 @@ tips = (
             "unmarked by default, and their thumbnails are dimmed so you can "
             "differentiate them from files that are yet to be downloaded."
         ),
-        ":/tips/previouslydownloaded.png",
+        "tips/previouslydownloaded.png",
     ),
     (
         _(
@@ -69,14 +54,14 @@ tips = (
             "whose checkbox was clicked, regardless of whether they previously had a "
             "checkmark or not."
         ),
-        ":/tips/markmany.png",
+        "tips/markmany.png",
     ),
     (
         _(
             "Click on a device's checkbox to quickly mark or unmark all its files for "
             "downloading."
         ),
-        ":/tips/markall.png",
+        "tips/markall.png",
     ),
     (
         _(
@@ -84,7 +69,7 @@ tips = (
             "icon's color indicates whether the download was successful (green), had "
             "file renaming problems (yellow/orange), or failed (red)."
         ),
-        ":/tips/downloaded.png",
+        "tips/downloaded.png",
     ),
     (
         _(
@@ -92,7 +77,7 @@ tips = (
             "window indicating how many error reports there are. Clicking on it opens "
             "the Error Report window."
         ),
-        ":/tips/errorreporticon.png",
+        "tips/errorreporticon.png",
         _(
             "The Error Report window lists any problems encountered before, during or "
             "after the download. An orange triangle represents a warning, a red circle "
@@ -101,7 +86,7 @@ tips = (
             "manager. You can also search the reports using the search box in the "
             "lower left of the Error Report window."
         ),
-        ":/tips/errorreport.png",
+        "tips/errorreport.png",
     ),
     (
         _(
@@ -109,7 +94,7 @@ tips = (
             "memory cards, and hard drives&mdash;as many devices as your computer "
             "can handle at one time."
         ),
-        ":/tips/multipledevices.png",
+        "tips/multipledevices.png",
     ),
     (
         _(
@@ -118,14 +103,14 @@ tips = (
             "consecutive shots. Use it to identify photos and videos taken at "
             "different periods in a single day or over consecutive days."
         ),
-        ":/tips/timeline.png",
+        "tips/timeline.png",
         _(
             "<p>In the illustration above, the first row of the Timeline is black "
             "because all the files on that date had been previously downloaded.</p>"
             "<p>The Timeline's slider adjusts the time elapsed between consecutive "
             "shots that is used to build the Timeline:</p>"
         ),
-        ":/tips/timelineadjust.png",
+        "tips/timelineadjust.png",
     ),
     (
         _(
@@ -134,7 +119,7 @@ tips = (
             "keys) to select time periods. When a time range is selected, the "
             "Timeline button on the left side of the main window will be highlighted."
         ),
-        ":/tips/timelineselect.png",
+        "tips/timelineselect.png",
         _(
             "A download always includes all files that are marked for download, "
             "including those that are not currently displayed because the Timeline "
@@ -146,7 +131,7 @@ tips = (
             "You can hide or display the download sources by clicking on the name of "
             "the device you're downloading from at the top left of the program window."
         ),
-        ":/tips/deviceshidden.png",
+        "tips/deviceshidden.png",
     ),
     (
         _(
@@ -164,7 +149,7 @@ tips = (
             "downloaded from.</li>"
             "</ol>"
         ),
-        ":/tips/thumbnailsort.png",
+        "tips/thumbnailsort.png",
     ),
     (
         _(
@@ -172,7 +157,7 @@ tips = (
             "automatically generate download subfolders and rename files as it "
             "downloads, using a scheme of your choosing."
         ),
-        ":/tips/downloadwhereandrename.png",
+        "tips/downloadwhereandrename.png",
         _(
             "To specify where you want your files downloaded and how you want them "
             "named, open the appropriate panel on the right-side of the application "
@@ -197,7 +182,7 @@ tips = (
             "under the destination folder.</li>"
             "</ol>"
         ),
-        ":/tips/defaultdownloaddirectory.png",
+        "tips/defaultdownloaddirectory.png",
         _(
             "You can download photos and videos to the same destination folder, or "
             "specify a different destination folder for each. The same applies to the "
@@ -212,7 +197,7 @@ tips = (
             "create a year subfolder and then a series of year-month-day subfolders "
             "within it."
         ),
-        ":/tips/downloadsubfolders.png",
+        "tips/downloadsubfolders.png",
     ),
     (
         _(
@@ -227,7 +212,7 @@ tips = (
             "downloaded (those colored black).</li>"
             "</ol>"
         ),
-        ":/tips/downloadsubfolders.png",
+        "tips/downloadsubfolders.png",
     ),
     (
         _(
@@ -246,7 +231,7 @@ tips = (
             "day in numeric format makes it easy to keep them sorted in a file "
             "manager, which is why it's the default option:"
         ),
-        ":/tips/downloadsubfolders.png",
+        "tips/downloadsubfolders.png",
     ),
     (
         _(
@@ -254,13 +239,13 @@ tips = (
             "one of Rapid Photo Downloader's built-in presets, or create a custom "
             "preset. Click on the gear icon to bring up a drop-down menu:"
         ),
-        ":/tips/subfoldermenu.png",
+        "tips/subfoldermenu.png",
         _(
             "Using the drop-down menu, select a built-in preset or click on "
             "<b>Custom</b> to configure your own scheme. You create your own schemes "
             "using the Photo or Video Subfolder Generation Editor:"
         ),
-        ":/tips/subfoldergeneration.png",
+        "tips/subfoldergeneration.png",
     ),
     (
         _(
@@ -268,7 +253,7 @@ tips = (
             "another. Simply use the <b>Filename Extension</b> as part of your "
             "download subfolder generation scheme:"
         ),
-        ":/tips/subfoldergenerationext.png",
+        "tips/subfoldergenerationext.png",
         _(
             "This illustration shows a saved custom preset named &quot;My custom "
             "preset&quot;."
@@ -280,7 +265,7 @@ tips = (
             "shows the generation of download subfolders that contain only the date "
             "the photos were taken and a Job Code:"
         ),
-        ":/tips/subfoldergeneration.png",
+        "tips/subfoldergeneration.png",
     ),
     (
         _(
@@ -291,7 +276,7 @@ tips = (
             "and month (MM) to form YYYY-MM. You can create it like this (note the "
             "red circle around the hyphen):"
         ),
-        ":/tips/customdate.png",
+        "tips/customdate.png",
         _(
             "Read more about all the ways you can generate download subfolder names "
             "and file names in the "
@@ -307,7 +292,7 @@ tips = (
             "applied to them, and the selected files are about to get the Job Code "
             "&quot;Green Bazaar&quot;:"
         ),
-        ":/tips/jobcodes.png",
+        "tips/jobcodes.png",
         _(
             "You can apply new or existing Job Codes before you start a download. If "
             "there are any files in the download that have not yet had a Job Code "
@@ -317,7 +302,7 @@ tips = (
     ),
     (
         _("Look for hints to guide you when working with Job Codes:"),
-        ":/tips/jobcodehint.png",
+        "tips/jobcodehint.png",
         _(
             "Hints will vary depending on the context, such as when the mouse is "
             "hovering over a button."
@@ -329,7 +314,7 @@ tips = (
             "confused as to which file is which. Using <b>sequence numbers</b> to make "
             "filenames unique is highly recommended!"
         ),
-        ":/tips/photoeditordefault.png",
+        "tips/photoeditordefault.png",
         _(
             "<p>Four types of sequence values are available to help you assign unique "
             "names to your photos and videos:"
@@ -353,7 +338,7 @@ tips = (
             "your files, you can choose from among existing renaming presets or define "
             "your own."
         ),
-        ":/tips/renameoptions.png",
+        "tips/renameoptions.png",
         _(
             "<p>The <b>Synchronize RAW + JPEG</b> option is useful if you use the "
             "RAW + JPEG feature on your camera and you use sequence numbers in your "
@@ -373,7 +358,7 @@ tips = (
             "Backup devices can be automatically detected, or exact backup locations "
             "specified."
         ),
-        ":/tips/backup.png",
+        "tips/backup.png",
         _(
             "In this example, the drive <b>photobackup</b> does not contain a folder "
             "named <tt>Videos</tt>, so videos will not be backed up to it."
@@ -387,7 +372,7 @@ tips = (
             "files cleared."
         )
         + _("You can also import program preferences from the older 0.4 version."),
-        ":/tips/commandline.png",
+        "tips/commandline.png",
     ),
     (
         _(
@@ -434,7 +419,7 @@ class Tips:
                 else:
                     text = f"{text}{value}<p></p>"
             else:
-                text = f'{text}<img src="{value}">'
+                text = f'{text}<img src="{data_file_path(value)}">'
         return text
 
     def __len__(self):
@@ -457,7 +442,9 @@ class DidYouKnowDialog(QDialog):
 
         title = QLabel(_("Did you know...?"))
         title.setFont(titleFont)
-        pixmap = QIcon(":/tips/did-you-know.svg").pixmap(QSize(pixsize, pixsize))  # type: QPixmap
+        pixmap: QPixmap = QIcon(data_file_path("tips/did-you-know.svg")).pixmap(
+            QSize(pixsize, pixsize)
+        )
 
         icon = QLabel()
         icon.setPixmap(pixmap)

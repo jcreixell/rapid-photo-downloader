@@ -1,20 +1,5 @@
-# Copyright (C) 2016-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 Two tasks:
@@ -30,9 +15,6 @@ be generated and the subfolders created on the file system in the offload proces
 the subfolders can only be removed by the main process (otherwise the watches used by
 QFileSystemModel complain about folders being removed)
 """
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2016-2024, Damon Lynch"
 
 import logging
 import os
@@ -72,29 +54,31 @@ class FoldersPreview:
         # Subfolders to generate, in simple string format
         # Independent of the specific download folder they're created under
         # e.g. '2015/2015-07-20' , not '/home/user/Pictures/2015/2015-07-20'
-        self.generated_photo_subfolders = set()  # type: set[str]
-        self.generated_video_subfolders = set()  # type: set[str]
+        self.generated_photo_subfolders: set[str] = set()
+        self.generated_video_subfolders: set[str] = set()
 
         # Scan ids associated with generated subfolders
         # key exactly matches those found in self.generated_photo_subfolders &
         # self.generated_video_subfolders
-        self.generated_photo_subfolders_scan_ids = defaultdict(set)  # type: dict[str, set[int]]
-        self.generated_video_subfolders_scan_ids = defaultdict(set)  # type: dict[str, set[int]]
+        self.generated_photo_subfolders_scan_ids: dict[str, set[int]] = defaultdict(set)
+        self.generated_video_subfolders_scan_ids: dict[str, set[int]] = defaultdict(set)
 
         # Subfolders actually created by this class, differentiated by level.
         # Need to differentiate levels because of need for fine-grained control
         # due to scenarios outlined above.
         # Dependent on the specific download folder they're created under, in
         # contrast to self.generated_photo_subfolders & self.generated_video_subfolders
-        self.created_photo_subfolders = defaultdict(set)  # type: dict[int, set[str]]
-        self.created_video_subfolders = defaultdict(set)  # type: dict[int, set[str]]
+        self.created_photo_subfolders: dict[int, set[str]] = defaultdict(set)
+        self.created_video_subfolders: dict[int, set[str]] = defaultdict(set)
 
         # key = (level, subfolder)
         # item = set[scan ids]
-        self.scan_ids_for_created_subfolders = defaultdict(set)  # type: dict[tuple[int, str], set[int]]
+        self.scan_ids_for_created_subfolders: dict[tuple[int, str], set[int]] = (
+            defaultdict(set)
+        )
 
         # Subfolders that were not created by this class, in simple string format
-        self.existing_subfolders = set()  # type: set[str]
+        self.existing_subfolders: set[str] = set()
 
         # Download config paramaters
         self.photo_download_folder = ""
@@ -108,9 +92,10 @@ class FoldersPreview:
         self.dirty = False
 
     def __repr__(self):
-        return "FoldersPreview({} photo dirs, {} video dirs)".format(
-            len(self._flatten_set(self.created_photo_subfolders)),
-            len(self._flatten_set(self.created_video_subfolders)),
+        return (
+            "FoldersPreview("
+            f"{len(self._flatten_set(self.created_photo_subfolders))} photo dirs, "
+            f"{len(self._flatten_set(self.created_video_subfolders))} video dirs)"
         )
 
     def dump(self) -> None:
@@ -223,9 +208,11 @@ class FoldersPreview:
                 keep=self.created_video_subfolders,
                 fsmodel=fsmodel,
             )
-            self.created_photo_subfolders = defaultdict(set)  # type: dict[int, set[str]]
-            self.generated_photo_subfolders = set()  # type: set[str]
-            self.generated_photo_subfolders_scan_ids = defaultdict(set)  # type: dict[str, set[int]]
+            self.created_photo_subfolders: dict[int, set[str]] = defaultdict(set)
+            self.generated_photo_subfolders: set[str] = set()
+            self.generated_photo_subfolders_scan_ids: dict[str, set[int]] = defaultdict(
+                set
+            )
 
         if destination.video_subfolder != self.video_subfolder:
             self.dirty = True
@@ -235,9 +222,11 @@ class FoldersPreview:
                 keep=self.created_photo_subfolders,
                 fsmodel=fsmodel,
             )
-            self.created_video_subfolders = defaultdict(set)  # type: dict[int, set[str]]
-            self.generated_video_subfolders = set()  # type: set[str]
-            self.generated_video_subfolders_scan_ids = defaultdict(set)  # type: dict[str, set[int]]
+            self.created_video_subfolders: dict[int, set[str]] = defaultdict(set)
+            self.generated_video_subfolders: set[str] = set()
+            self.generated_video_subfolders_scan_ids: dict[str, set[int]] = defaultdict(
+                set
+            )
 
     def generate_subfolders(
         self, rpd_files: Sequence[RPDFile], strip_characters: bool
@@ -251,7 +240,7 @@ class FoldersPreview:
         :param strip_characters: value from user prefs.
         """
 
-        for rpd_file in rpd_files:  # type: RPDFile
+        for rpd_file in rpd_files:
             photo = rpd_file.file_type == FileType.photo
             rpd_file.strip_characters = strip_characters
             if photo:
@@ -281,7 +270,7 @@ class FoldersPreview:
                 keep=self.created_video_subfolders,
                 fsmodel=fsmodel,
             )
-            self.created_photo_subfolders = defaultdict(set)  # type: dict[int, set[str]]
+            self.created_photo_subfolders: dict[int, set[str]] = defaultdict(set)
             for path in self.generated_photo_subfolders:
                 scan_ids = self.generated_photo_subfolders_scan_ids[path]
                 self.create_path(path=path, photos=True, scan_ids=scan_ids)
@@ -291,7 +280,7 @@ class FoldersPreview:
                 keep=self.created_photo_subfolders,
                 fsmodel=fsmodel,
             )
-            self.created_video_subfolders = defaultdict(set)  # type: dict[int, set[str]]
+            self.created_video_subfolders: dict[int, set[str]] = defaultdict(set)
             for path in self.generated_video_subfolders:
                 scan_ids = self.generated_video_subfolders_scan_ids[path]
                 self.create_path(path=path, photos=False, scan_ids=scan_ids)
@@ -371,10 +360,10 @@ class FoldersPreview:
         self.clean_generated_folders(
             remove=self.created_video_subfolders, fsmodel=fsmodel
         )
-        self.generated_photo_subfolders = set()  # type: set[str]
-        self.generated_video_subfolders = set()  # type: set[str]
-        self.generated_photo_subfolders_scan_ids = defaultdict(set)  # type: dict[str, set[int]]
-        self.generated_video_subfolders_scan_ids = defaultdict(set)  # type: dict[str, set[int]]
+        self.generated_photo_subfolders: set[str] = set()
+        self.generated_video_subfolders: set[str] = set()
+        self.generated_photo_subfolders_scan_ids: dict[str, set[int]] = defaultdict(set)
+        self.generated_video_subfolders_scan_ids: dict[str, set[int]] = defaultdict(set)
 
     def clean_generated_folders_for_scan_id(
         self, scan_id: int, fsmodel: QFileSystemModel

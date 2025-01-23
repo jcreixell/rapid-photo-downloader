@@ -1,23 +1,5 @@
-#!/usr/bin/env python3
-
-# Copyright (C) 2015-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
-
+# SPDX-FileCopyrightText: Copyright 2015-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 Analyze the location of exif data in a variety of RAW and jpeg files.
@@ -32,9 +14,6 @@ Two goals:
  2) Determine the minimum amount of the file that can be read to get
     the exif orientation and the exif date time.
 """
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2015-2024, Damon Lynch"
 
 # ruff: noqa: E402
 
@@ -62,15 +41,17 @@ from raphodo.metadata.analysis.photoattributes import (
 )
 from raphodo.metadata.analysis.videoattributes import VideoAttributes
 from raphodo.metadata.exiftool import ExifTool
-from raphodo.metadata.fileformats import (
+from raphodo.metadata.fileextensions import (
     JPEG_TYPE_EXTENSIONS,
     RAW_EXTENSIONS,
     VIDEO_EXTENSIONS,
+)
+from raphodo.metadata.fileformats import (
     extract_extension,
     use_exiftool_on_photo,
 )
 from raphodo.rpdsql import FileFormatSQL
-from raphodo.utilities import (
+from raphodo.tools.utilities import (
     confirm,
     format_size_for_user,
     show_errors,
@@ -83,7 +64,6 @@ try:
     have_progressbar = True
 except ImportError:
     have_progressbar = False
-
 
 JPEG_EXTENSIONS = JPEG_TYPE_EXTENSIONS
 
@@ -166,8 +146,8 @@ def scan(
         print()
         if len(not_tested) > 20:
             for line in textwrap.wrap(
-                "WARNING: {:,} files will not be analyzed because they are already in "
-                "the kernel disk cache.".format(len(not_tested)),
+                f"WARNING: {len(not_tested):,} files will not be analyzed because "
+                f"they are already in the kernel disk cache.",
                 width=80,
             ):
                 print(line)

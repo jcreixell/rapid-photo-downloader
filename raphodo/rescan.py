@@ -1,22 +1,5 @@
-#!/usr/bin/env python3
-
-# Copyright (C) 2011-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Copyright 2011-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 Given a collection of RPDFiles, rescans a camera to locate their 'new' location.
@@ -25,9 +8,6 @@ Used in case of iOS and possibly other buggy devices that generate subfolders
 for photos / videos seemingly at random each time the device is initialized for access,
 which is what a gphoto2 process does.
 """
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2011-2024, Damon Lynch"
 
 import logging
 import os
@@ -61,11 +41,11 @@ class RescanCamera:
                 camera.display_name,
             )
         # Relocated RPD files
-        self.rpd_files = []  # type: list[RPDFile]
+        self.rpd_files: list[RPDFile] = []
         # Missing RPD files
-        self.missing_rpd_files = []  # type: list[RPDFile]
+        self.missing_rpd_files: list[RPDFile] = []
         self.prefs = prefs
-        self.scan_preferences = None  # type: ScanPreferences | None
+        self.scan_preferences: ScanPreferences | None = None
 
     def rescan_camera(self, rpd_files: list[RPDFile]) -> None:
         """
@@ -97,7 +77,7 @@ class RescanCamera:
             return
 
         # filename: RPDFile
-        self.prev_scanned_files = defaultdict(list)  # type: defaultdict[str, list[RPDFile]]
+        self.prev_scanned_files: defaultdict[str, list[RPDFile]] = defaultdict(list)
         self.scan_preferences = ScanPreferences(self.prefs.ignored_paths)
 
         for rpd_file in rpd_files:
@@ -129,7 +109,7 @@ class RescanCamera:
             if name in self.prev_scanned_files:
                 prev_rpd_files = self.prev_scanned_files[name]
                 if len(prev_rpd_files) > 1:
-                    rpd_file = None  # type: RPDFile | None
+                    rpd_file: RPDFile | None = None
                     # more than one file with the same filename is found on the camera
                     # compare match by modification time and size check
                     for prev_rpd_file in prev_rpd_files:

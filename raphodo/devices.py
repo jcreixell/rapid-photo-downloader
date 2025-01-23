@@ -1,20 +1,5 @@
-# Copyright (C) 2015-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Copyright 2015-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 Handle Devices and Device Collections.
@@ -24,9 +9,6 @@ context:
 1. In the GUI, a Device is a camera or a volume (external drive)
 2. In code, a Device is one of a camera, volume, or path
 """
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2015-2024, Damon Lynch"
 
 import itertools
 import logging
@@ -47,11 +29,13 @@ from raphodo.constants import (
     BackupLocationType,
     DeviceState,
     DeviceType,
-    DownloadStatus,  # noqa: F401
+    DownloadStatus,
     ExifSource,
     FileType,
     FileTypeFlag,
 )
+from raphodo.internationalisation.install import install_gettext
+from raphodo.internationalisation.utilities import make_internationalized_list
 from raphodo.problemnotification import FsMetadataWriteProblem
 from raphodo.rpdfile import FileSizeSum, FileTypeCounter, Photo, RPDFile, Video
 from raphodo.storage.storage import (
@@ -69,15 +53,16 @@ from raphodo.storage.storageidevice import (
     idevice_serial_to_udid,
     utilities_present,
 )
-from raphodo.utilities import (
-    make_internationalized_list,
+from raphodo.tools.utilities import (
+    data_file_path,
     number,
     same_device,
     stdchannel_redirected,
 )
 
-DownloadingTo = defaultdict[int, set[FileType]]
+install_gettext()
 
+DownloadingTo = defaultdict[int, set[FileType]]
 
 display_devices = (DeviceType.volume, DeviceType.camera, DeviceType.camera_fuse)
 camera_devices = (DeviceType.camera, DeviceType.camera_fuse)
@@ -134,38 +119,38 @@ class Device:
         self.clear()
 
     def clear(self):
-        self.camera_model = None  # type: str|None
-        self.camera_port = None  # type: str|None
+        self.camera_model: str | None = None
+        self.camera_port: str | None = None
         # Assume an MTP device is likely a smartphone or tablet
         self.is_mtp_device = False
         self.is_apple_mobile = False
         self.is_camera_fuse = False
-        self.udev_serial = None  # type: str|None
-        self.idevice_udid = None  # type: str|None
-        self.udev_name = None  # type: str|None
-        self.storage_space = []  # type: list[StorageSpace]
+        self.udev_serial: str | None = None
+        self.idevice_udid: str | None = None
+        self.udev_name: str | None = None
+        self.storage_space: list[StorageSpace] = []
         # Name of storage on a camera
-        self.storage_descriptions = []  # type: list[str]
+        self.storage_descriptions: list[str] = []
 
-        self.path = None  # type: str|None
-        self.display_name = None  # type: str|None
+        self.path: str | None = None
+        self.display_name: str | None = None
         self.have_optimal_display_name = False
         # iOS devices can report their device name when the device is already paired
         self.have_canoncial_ios_name = False
-        self.device_type = None  # type: DeviceType|None
-        self.icon_name = None  # type: str|None
-        self.can_eject = None  # type: bool|None
-        self.photo_cache_dir = None  # type: str|None
-        self.video_cache_dir = None  # type: str|None
+        self.device_type: DeviceType | None = None
+        self.icon_name: str | None = None
+        self.can_eject: bool | None = None
+        self.photo_cache_dir: str | None = None
+        self.video_cache_dir: str | None = None
         self.file_size_sum = FileSizeSum()
         self.file_type_counter = FileTypeCounter()
-        self.download_statuses = set()  # type: set[DownloadStatus]
+        self.download_statuses: set[DownloadStatus] = set()
         self._uri = ""
         # If the entire video or photo is required to extract metadata
         # (which affects thumbnail generation too).
         # Set only if downloading from a camera / phone.
-        self.entire_video_required = None  # type: bool|None
-        self.entire_photo_required = None  # type: bool|None
+        self.entire_video_required: bool | None = None
+        self.entire_photo_required: bool | None = None
 
     def __repr__(self):
         if self.device_type == DeviceType.camera:
@@ -181,25 +166,27 @@ class Device:
             return "%r" % self.path
 
     def __str__(self):
-        if self.device_type == DeviceType.camera:
-            return (
-                f"{self.camera_model} on port {self.camera_port}. "
-                f"Udev: {self.udev_name}; "
-                f"Display name: {self.display_name} "
-                f"(optimal: {self.have_optimal_display_name}); "
-                f"MTP: {self.is_mtp_device}"
-            )
-        elif self.device_type == DeviceType.camera_fuse:
-            return "{} on port {}. Mount point: {}; Display name: {}".format(
-                self.camera_model, self.camera_port, self.display_name, self.path
-            )
-        elif self.device_type == DeviceType.volume:
-            if self.path != self.display_name:
-                return f"{self.path} ({self.display_name})"
-            else:
-                return "%s" % self.path
-        else:
-            return "%s" % self.path
+        match self.device_type:
+            case DeviceType.camera:
+                return (
+                    f"{self.camera_model} on port {self.camera_port}. "
+                    f"Udev: {self.udev_name}; "
+                    f"Display name: {self.display_name} "
+                    f"(optimal: {self.have_optimal_display_name}); "
+                    f"MTP: {self.is_mtp_device}"
+                )
+            case DeviceType.camera_fuse:
+                return (
+                    f"{self.camera_model} on port {self.camera_port}. "
+                    f"Mount point: {self.display_name}; Display name: {self.path}"
+                )
+            case DeviceType.volume:
+                if self.path != self.display_name:
+                    return f"{self.path} ({self.display_name})"
+                else:
+                    return f"{self.path}"
+            case _:
+                return f"{self.path}"
 
     def __eq__(self, other):
         for attr in ("device_type", "camera_model", "camera_port", "path"):
@@ -379,17 +366,17 @@ class Device:
 
         # TODO consider scaledIcon() here
         if self.device_type == DeviceType.volume:
-            return QIcon(":/icons/drive-removable-media.svg")
+            return QIcon(data_file_path("icons/drive-removable-media.svg"))
         elif self.device_type == DeviceType.path:
-            return QIcon(":/icons/folder.svg")
+            return QIcon(data_file_path("icons/folder.svg"))
         else:
             assert self.device_type in camera_devices
             if self.is_mtp_device or self.is_apple_mobile:
                 if self.camera_model.lower().find("tablet") >= 0:
                     # TODO use tablet icon
                     pass
-                return QIcon(":/icons/smartphone.svg")
-            return QIcon(":/icons/camera.svg")
+                return QIcon(data_file_path("icons/smartphone.svg"))
+            return QIcon(data_file_path("icons/camera.svg"))
 
     def get_pixmap(
         self, size: QSize = QSize(30, 30), device_pixel_ratio: float | None = None
@@ -516,68 +503,68 @@ class DeviceCollection:
     ) -> None:
         self.rapidApp = rapidApp
 
-        self.devices = {}  # type: dict[int, Device]
+        self.devices: dict[int, Device] = {}
         # port: model
-        self.cameras = {}  # type: dict[str, str]
+        self.cameras: dict[str, str] = {}
 
         # Track device names and uris to be able to report this information
         # after a device has been removed
         # scan_id: name uri
-        self.device_archive = {}  # type: dict[int, DeviceNameUri]
+        self.device_archive: dict[int, DeviceNameUri] = {}
 
         # Used to assign scan ids
-        self.scan_counter = 0  # type: int
+        self.scan_counter: int = 0
 
         # scan_id: DeviceState
-        self.device_state = {}  # type: dict[int, DeviceState]
+        self.device_state: dict[int, DeviceState] = {}
 
         # Track which devices are being scanned, by scan_id
-        self.scanning = set()  # type: set[int]
+        self.scanning: set[int] = set()
         # Track which downloads are running, by scan_id
 
-        self.downloading = set()  # type: set[int]
+        self.downloading: set[int] = set()
         # Track which devices have been downloaded from during one
         # download, by display name. Must do it by display name
         # because some devices could be removed before all devices
         # have been downloaded from.
-        self.have_downloaded_from = set()  # type: set[str]
+        self.have_downloaded_from: set[str] = set()
 
         # Track which devices are thumbnailing, by scan_id
-        self.thumbnailing = set()  # type: set[int]
+        self.thumbnailing: set[int] = set()
 
         # Track the unmounting of unscanned cameras by port and model
         # port: model
-        self.cameras_to_gvfs_unmount_for_scan = {}  # type: dict[str, str]
+        self.cameras_to_gvfs_unmount_for_scan: dict[str, str] = {}
 
         # Which scanned cameras need to be unmounted for a download to start, by scan_id
-        self.cameras_to_gvfs_unmount_for_download = set()  # type: set[int]
+        self.cameras_to_gvfs_unmount_for_download: set[int] = set()
         self.cameras_to_stop_thumbnailing = set()
 
         # Automatically detected devices where the user has explicitly said to ignore it
         # port: model
-        self.ignored_cameras = {}  # type: dict[str, str]
+        self.ignored_cameras: dict[str, str] = {}
         # list[path]
-        self.ignored_volumes = []  # type: list[str]
+        self.ignored_volumes: list[str] = []
 
         # Devices that were set to autodownload while the program
         # is in a paused state
-        self.queued_to_download = set()  # type: set[int]
+        self.queued_to_download: set[int] = set()
 
-        self.volumes_and_cameras = set()  # type: set[int]
-        self.this_computer = set()  # type: set[int]
+        self.volumes_and_cameras: set[int] = set()
+        self.this_computer: set[int] = set()
 
         # List of devices that were detected at program startup
         # scan_id
-        self.startup_devices = []  # type: list[int]
+        self.startup_devices: list[int] = []
 
         # Sample exif bytes of photo on most recent device scanned
-        self._sample_photo = None  # type: Photo|None
-        self._sample_video = None  # type: Video|None
-        self._sample_files_complete = []  # type: list[SampleFileComplete]
+        self._sample_photo: Photo | None = None
+        self._sample_video: Video | None = None
+        self._sample_files_complete: list[SampleFileComplete] = []
         self.exiftool_process = exiftool_process
 
         # Cache camera Devices when determining whether to scan it or not
-        self.camera_device_cache = {}  # type: dict[tuple[str, str], Device]
+        self.camera_device_cache: dict[tuple[str, str], Device] = {}
 
         self._map_set = {
             DeviceType.path: self.this_computer,
@@ -809,7 +796,7 @@ class DeviceCollection:
         :return: True if the path is already being processed, else False
         """
         for scan_id in self.devices:
-            device = self.devices[scan_id]  # type: Device
+            device: Device = self.devices[scan_id]
             if device.path == path and (
                 device_type is None or device.device_type == device_type
             ):
@@ -1004,11 +991,11 @@ class DeviceCollection:
          during this download
         """
         display_names = make_internationalized_list(list(self.have_downloaded_from))
-        self.have_downloaded_from = set()  # type: set[str]
+        self.have_downloaded_from: set[str] = set()
         return display_names
 
     def __delitem__(self, scan_id: int):
-        d = self.devices[scan_id]  # type: Device
+        d: Device = self.devices[scan_id]
         logging.debug("Deleting %s device from device collection", d.device_type.name)
         if d.device_type in camera_devices:
             del self.cameras[d.camera_port]
@@ -1213,17 +1200,17 @@ class DeviceCollection:
         """
 
         if not len(self):
-            return _("Select Source"), QIcon(":/icons/computer.svg")
+            return _("Select Source"), QIcon(data_file_path("icons/computer.svg"))
         elif len(self) == 1:
             # includes case where path is the only device
             device = list(self.devices.values())[0]
             return device.display_name, device.get_icon()
         else:
-            non_pc_devices = [
+            non_pc_devices: list[Device] = [
                 device
                 for device in self.devices.values()
                 if device.device_type != DeviceType.path
-            ]  # type: list[Device]
+            ]
             try:
                 assert len(non_pc_devices) == len(self.volumes_and_cameras)
             except AssertionError:
@@ -1246,7 +1233,7 @@ class DeviceCollection:
                 assert len(self.this_computer) < 2
                 assert len(self.this_computer) > 0
 
-                icon = QIcon(":/icons/computer.svg")
+                icon = QIcon(data_file_path("icons/computer.svg"))
                 devices = list(self.volumes_and_cameras)
                 computer_display_name = self.devices[
                     list(self.this_computer)[0]
@@ -1289,7 +1276,7 @@ class DeviceCollection:
                             "device2": devices[1].display_name,
                         }
                         if device_type in camera_devices and len(mtp_devices) != 2:
-                            return text, QIcon(":/icons/camera.svg")
+                            return text, QIcon(data_file_path("icons/camera.svg"))
                         return text, devices[0].get_icon()
                     try:
                         text_number = number(
@@ -1305,7 +1292,7 @@ class DeviceCollection:
                         text = _("%(no_cameras)s Cameras") % {"no_cameras": text_number}
                         if len(mtp_devices) == len(self.volumes_and_cameras):
                             return text, non_pc_devices[0].get_icon()
-                        return text, QIcon(":/icons/camera.svg")
+                        return text, QIcon(data_file_path("icons/camera.svg"))
                     elif device_type == DeviceType.volume:
                         # Translators: %(variable)s represents Python code, not a plural
                         # of the term variable. You must keep the %(variable)s
@@ -1313,10 +1300,12 @@ class DeviceCollection:
                         text = _("%(no_devices)s Devices") % dict(
                             no_devices=text_number
                         )
-                        return text, QIcon(":/icons/drive-removable-media.svg")
+                        return text, QIcon(
+                            data_file_path("icons/drive-removable-media.svg")
+                        )
                 else:
                     device_display_name = self._mixed_devices(device_type_text)
-                    icon = QIcon(":/icons/computer.svg")
+                    icon = QIcon(data_file_path("icons/computer.svg"))
                     return device_display_name, icon
 
 
@@ -1409,10 +1398,10 @@ class BackupDeviceCollection:
 
     def __init__(self, rapidApp: "RapidWindow" = None):  # noqa: F821
         self.rapidApp = rapidApp
-        self.devices = dict()  # type: dict[str, BackupDevice]
+        self.devices: dict[str, BackupDevice] = dict()
         # set[path]
-        self.photo_backup_devices = set()  # type: set[str]
-        self.video_backup_devices = set()  # type: set[str]
+        self.photo_backup_devices: set[str] = set()
+        self.video_backup_devices: set[str] = set()
 
         self._device_ids = {}
         self._device_id = 0
@@ -1494,7 +1483,7 @@ class BackupDeviceCollection:
             else:
                 return path
         else:
-            mount = self.devices[path].mount  # type:  QStorageInfo
+            mount: QStorageInfo = self.devices[path].mount
             if self.rapidApp.is_wsl2 and self.rapidApp.wsl_drives_probed:
                 return self.rapidApp.wslDrives.displayName(mount.rootPath())
             else:
@@ -1543,7 +1532,7 @@ class BackupDeviceCollection:
         except Exception:
             video_device = 0
 
-        downloading_to = defaultdict(set)  # type: DownloadingTo
+        downloading_to: DownloadingTo = defaultdict(set)
 
         if photo_device != video_device:
             download_dests = (photo_device, video_device)
@@ -1836,12 +1825,12 @@ class FSMetadataErrors:
 
     def __init__(self) -> None:
         # A 'device' in this class is the st_dev value returned by os.stat
-        self.devices = set()  # type: set[int]
-        self.archived_devices = set()  # type: set[int]
+        self.devices: set[int] = set()
+        self.archived_devices: set[int] = set()
         # device: FsMetadataWriteProblem
-        self.metadata_errors = dict()  # type: dict[int, FsMetadataWriteProblem]
+        self.metadata_errors: dict[int, FsMetadataWriteProblem] = dict()
         # scan_id / device_id: set[device]
-        self.worker_id_devices = defaultdict(set)  # type: defaultdict[int, set[int]]
+        self.worker_id_devices: defaultdict[int, set[int]] = defaultdict(set)
 
     def add_problem(
         self, worker_id: int, path: str, mdata_exceptions: tuple[Exception]

@@ -1,27 +1,5 @@
-# Copyright (C) 2016-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
-
-"""
-Display file renaming preferences, including sequence numbers
-"""
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2016-2024, Damon Lynch"
+# SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
 
@@ -53,12 +31,15 @@ from raphodo.generatenameconfig import (
     UPPERCASE,
     VIDEO_RENAME_MENU_DEFAULTS_CONV,
 )
+from raphodo.internationalisation.install import install_gettext
 from raphodo.prefs.preferences import DownloadsTodayTracker, Preferences
 from raphodo.rpdfile import Photo, Video
+from raphodo.tools.utilities import platform_c_maxint
 from raphodo.ui.nameeditor import PrefDialog, PresetComboBox, make_sample_rpd_file
 from raphodo.ui.panelview import QPanelView
 from raphodo.ui.viewutils import FlexiFrame, ScrollAreaNoFrame
-from raphodo.utilities import platform_c_maxint
+
+install_gettext()
 
 
 class RenameWidget(FlexiFrame):

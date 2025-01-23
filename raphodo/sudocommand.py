@@ -1,24 +1,5 @@
-# Copyright (C) 2021-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
-
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2021-2024, Damon Lynch."
+# SPDX-FileCopyrightText: Copyright 2021-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
 import shlex
@@ -40,8 +21,12 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
 )
 
+from raphodo.internationalisation.install import install_gettext
+from raphodo.tools.utilities import data_file_path
 from raphodo.ui.password import PasswordEdit
 from raphodo.ui.viewutils import translateDialogBoxButtons
+
+install_gettext()
 
 
 class SudoCommand(QDialog):
@@ -61,7 +46,11 @@ class SudoCommand(QDialog):
 
         if title:
             titleHLayout = QHBoxLayout()
-            i = QIcon(icon) if icon else QIcon(":/rapid-photo-downloader.svg")
+            i = (
+                QIcon(data_file_path(icon))
+                if icon
+                else QIcon(data_file_path("rapid-photo-downloader.svg"))
+            )
             size = QFontMetrics(QFont()).height()
             pixmap = i.pixmap(QSize(size, size))
             titleIcon = QLabel()
@@ -230,7 +219,9 @@ def run_command_as_sudo_with_password(
     )
 
 
-def run_command_as_sudo_without_password(cmd: str, timeout=10) -> SudoCommandResult:
+def run_command_as_sudo_without_password(
+    cmd: str, timeout: int = 10
+) -> SudoCommandResult:
     """
     Run a single command via sudo instructing sudo to not prompt for the password
 
@@ -283,11 +274,11 @@ def run_commands_as_sudo(
     cmds: list[str],
     parent,
     msg: str | None = None,
-    timeout=10,
+    timeout: int = 10,
     title: str | None = None,
     icon: str | None = None,
     help_url: str | None = None,
-) -> list[SudoCommandResult, ...]:
+) -> list[SudoCommandResult]:
     """
     Run a list of commands. If necessary, prompt for the sudo password using a dialog.
 
@@ -305,7 +296,7 @@ def run_commands_as_sudo(
     :return: list of return codes, stdout and stderr
     """
 
-    results = []  # type: list[SudoCommandResult, ...]
+    results: list[SudoCommandResult] = []
     for cmd in cmds:
         try:
             result = run_command_as_sudo_without_password(cmd=cmd, timeout=timeout)
@@ -354,9 +345,9 @@ if __name__ == "__main__":
 
     cmds = ["echo OK"]
 
-    title = "Unmount drives EOS_DIGITAL (G:) and EOS_DIGITAL (J:)"
+    # title = "Unmount drives EOS_DIGITAL (G:) and EOS_DIGITAL (J:)"
     title = "Unmount drives EOS_DIGITAL (G:)"
-    icon = ":/icons/drive-removable-media.svg"
+    icon = "icons/drive-removable-media.svg"
 
     results = run_commands_as_sudo(
         cmds=cmds,

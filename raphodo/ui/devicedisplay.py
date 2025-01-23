@@ -1,21 +1,6 @@
-# Copyright (C) 2015-2024 Damon Lynch <damonlynch@gmail.com>
-# Copyright (c) 2012-2014 Alexander Turkin
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Copyright 2015-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-FileCopyrightText: Copyright 2012-2014 Alexander Turkin
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 Display details of devices like cameras, external drives and folders on the
@@ -34,9 +19,6 @@ Copyright notice from QtWaitingSpinner source:
         Modified 2015 by Jacob Dawid
         Ported to Python3 2015 by Luca Weiss
 """
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2015-2024, Damon Lynch"
 
 import logging
 import math
@@ -100,8 +82,11 @@ from raphodo.constants import (
     ViewRowType,
 )
 from raphodo.devices import Device
+from raphodo.internationalisation.install import install_gettext
+from raphodo.internationalisation.utilities import thousands
 from raphodo.rpdfile import make_key
-from raphodo.storage.storage import StorageSpace  # noqa: F401
+from raphodo.storage.storage import StorageSpace
+from raphodo.tools.utilities import data_file_path, format_size_for_user
 from raphodo.ui.viewutils import (
     ListViewFlexiFrame,
     RowTracker,
@@ -111,7 +96,8 @@ from raphodo.ui.viewutils import (
     scaledIcon,
     standard_font_size,
 )
-from raphodo.utilities import format_size_for_user, thousands
+
+install_gettext()
 
 
 def icon_size() -> int:
@@ -141,27 +127,27 @@ class DeviceModel(QAbstractListModel):
         self.rapidApp = parent
         self.device_display_type = device_display_type
         # scan_id: Device
-        self.devices = {}  # type: dict[int, Device]
+        self.devices: dict[int, Device] = {}
         # scan_id: DeviceState
-        self.spinner_state = {}  # type: dict[int, DeviceState]
+        self.spinner_state: dict[int, DeviceState] = {}
         # scan_id: bool
-        self.checked = defaultdict(lambda: Qt.Checked)  # type: dict[int, Qt.CheckState]
-        self.icons = {}  # type: dict[int, QPixmap]
-        self.rows = RowTracker()  # type: RowTracker
-        self.row_id_counter = 0  # type: int
-        self.row_id_to_scan_id = dict()  # type: dict[int, int]
-        self.scan_id_to_row_ids = defaultdict(list)  # type: dict[int, list[int]]
-        self.storage = dict()  # type: dict[int, StorageSpace | None]
-        self.headers = set()  # type: set[int]
+        self.checked: dict[int, Qt.CheckState] = defaultdict(lambda: Qt.Checked)
+        self.icons: dict[int, QPixmap] = {}
+        self.rows: RowTracker = RowTracker()
+        self.row_id_counter: int = 0
+        self.row_id_to_scan_id: dict[int, int] = dict()
+        self.scan_id_to_row_ids: dict[int, list[int]] = defaultdict(list)
+        self.storage: dict[int, StorageSpace | None] = dict()
+        self.headers: set[int] = set()
 
         self.icon_size = icon_size()
 
-        self.row_ids_active = []  # type: list[int]
+        self.row_ids_active: list[int] = []
 
         # scan_id: 0.0-1.0
-        self.percent_complete = defaultdict(float)  # type: dict[int, float]
+        self.percent_complete: dict[int, float] = defaultdict(float)
 
-        self._rotation_position = 0  # type: int
+        self._rotation_position: int = 0
         self._timer = QTimer(self)
         self._timer.setInterval(
             round(1000 / (number_spinner_lines * revolutions_per_second))
@@ -190,11 +176,11 @@ class DeviceModel(QAbstractListModel):
         no_rows = no_storage + 1
 
         if len(device.storage_space):
-            i = 0
             start_row_id = self.row_id_counter + 1
-            for row_id in range(start_row_id, start_row_id + len(device.storage_space)):
+            for i, row_id in enumerate(
+                range(start_row_id, start_row_id + len(device.storage_space))
+            ):
                 self.storage[row_id] = device.storage_space[i]
-                i += 1
         else:
             self.storage[self.row_id_counter + 1] = None
 
@@ -351,7 +337,7 @@ class DeviceModel(QAbstractListModel):
         elif role == Roles.scan_id:
             return scan_id
         else:
-            device = self.devices[scan_id]  # type: Device
+            device: Device = self.devices[scan_id]
             if role == Qt.ToolTipRole:
                 if device.device_type in (DeviceType.path, DeviceType.volume):
                     return device.path
@@ -499,7 +485,7 @@ class DeviceView(ListViewFlexiFrame):
         return QSize(self.view_width, height)
 
     def minimumHeight(self) -> int:
-        model = self.model()  # type: DeviceModel
+        model: DeviceModel = self.model()
         if model.rowCount() > 0:
             height = 0
             for row in range(self.model().rowCount()):
@@ -570,7 +556,7 @@ class EmulatedHeaderRow(QWidget):
     def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter()
         painter.begin(self)
-        rect = self.rect()  # type: QRect
+        rect: QRect = self.rect()
         rect.setHeight(device_name_height())
         painter.fillRect(rect, device_name_highlight_color())
         rect.adjust(DeviceDisplayPadding, 0, 0, 0)
@@ -1113,9 +1099,9 @@ class AdvancedDeviceDisplay(DeviceDisplay):
         self.rendering_destination = False
 
         self.checkboxStyleOption = QStyleOptionButton()
-        self.checkboxRect = QApplication.style().subElementRect(
+        self.checkboxRect: QRect = QApplication.style().subElementRect(
             QStyle.SE_CheckBoxIndicator, self.checkboxStyleOption, None
-        )  # type: QRect
+        )
         self.checkbox_right = self.checkboxRect.right()
         self.checkbox_y_offset = (
             self.dc.device_name_strip_height - self.checkboxRect.height()
@@ -1133,11 +1119,13 @@ class AdvancedDeviceDisplay(DeviceDisplay):
         self.dc.icon_x_offset = self.dc.icon_size + self.dc.header_horizontal_padding
 
         self.downloaded_icon_size = 16
-        self.downloadedIcon = scaledIcon(":/thumbnail/downloaded.svg")
+        self.downloadedIcon = scaledIcon(data_file_path("thumbnail/downloaded.svg"))
         self.downloadedWarningIcon = scaledIcon(
-            ":/thumbnail/downloaded-with-warning.svg"
+            data_file_path("thumbnail/downloaded-with-warning.svg")
         )
-        self.downloadedErrorIcon = scaledIcon(":/thumbnail/downloaded-with-error.svg")
+        self.downloadedErrorIcon = scaledIcon(
+            data_file_path("thumbnail/downloaded-with-error.svg")
+        )
         self.downloaded_icon_y = self.v_align_header_pixmap(
             0, self.downloaded_icon_size
         )
@@ -1309,13 +1297,13 @@ class DeviceDelegate(QStyledItemDelegate):
         self.rescanDeviceAct = self.contextMenu.addAction(_("Rescan"))
         self.rescanDeviceAct.triggered.connect(self.rescanDevice)
         # store the index in which the user right-clicked
-        self.clickedIndex = None  # type: QModelIndex | None
+        self.clickedIndex: QModelIndex | None = None
 
     @pyqtSlot()
     def ignoreDevice(self) -> None:
         index = self.clickedIndex
         if index:
-            scan_id = index.data(Roles.scan_id)  # type: int
+            scan_id: int = index.data(Roles.scan_id)
             self.rapidApp.removeDevice(
                 scan_id=scan_id, ignore_in_this_program_instantiation=True
             )
@@ -1325,7 +1313,7 @@ class DeviceDelegate(QStyledItemDelegate):
     def blacklistDevice(self) -> None:
         index = self.clickedIndex
         if index:
-            scan_id = index.data(Roles.scan_id)  # type: int
+            scan_id: int = index.data(Roles.scan_id)
             self.rapidApp.blacklistDevice(scan_id=scan_id)
             self.clickedIndex = None
 
@@ -1333,7 +1321,7 @@ class DeviceDelegate(QStyledItemDelegate):
     def rescanDevice(self) -> None:
         index = self.clickedIndex
         if index:
-            scan_id = index.data(Roles.scan_id)  # type: int
+            scan_id: int = index.data(Roles.scan_id)
             self.rapidApp.rescanDevice(scan_id=scan_id)
             self.clickedIndex = None
 
@@ -1346,13 +1334,15 @@ class DeviceDelegate(QStyledItemDelegate):
         y = option.rect.y()
         width = option.rect.width()
 
-        view_type = index.data(Qt.DisplayRole)  # type: ViewRowType
+        view_type: ViewRowType = index.data(Qt.DisplayRole)
         if view_type == ViewRowType.header:
             display_name, icon, device_state, rotation, percent_complete = index.data(
                 Roles.device_details
             )
             if device_state == DeviceState.finished:
-                download_statuses = index.data(Roles.download_statuses)  # type: set[DownloadStatus]
+                download_statuses: set[DownloadStatus] = index.data(
+                    Roles.download_statuses
+                )
             else:
                 download_statuses = set()
 
@@ -1378,7 +1368,9 @@ class DeviceDelegate(QStyledItemDelegate):
         else:
             assert view_type == ViewRowType.content
 
-            device, storage_space = index.data(Roles.storage)  # type: Device, StorageSpace
+            device: Device
+            storage_space: StorageSpace
+            device, storage_space = index.data(Roles.storage)
 
             if storage_space is not None:
                 if device.device_type == DeviceType.camera:
@@ -1467,7 +1459,7 @@ class DeviceDelegate(QStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
-        view_type = index.data(Qt.DisplayRole)  # type: ViewRowType
+        view_type: ViewRowType = index.data(Qt.DisplayRole)
         if view_type == ViewRowType.header:
             height = self.deviceDisplay.dc.device_name_height
         else:

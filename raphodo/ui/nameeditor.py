@@ -1,28 +1,9 @@
-#!/usr/bin/env python3
-# Copyright (C) 2016-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 Dialog for editing download subfolder structure and file renaming
 """
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2016-2024, Damon Lynch"
 
 import copy
 import datetime
@@ -97,19 +78,22 @@ from raphodo.generatenameconfig import (
     VIDEO_SUBFOLDER_MENU_DEFAULTS_CONV,
     filter_subfolder_prefs,
 )
+from raphodo.internationalisation.install import install_gettext
 from raphodo.prefs.preferences import (
     DownloadsTodayTracker,
     Preferences,
     match_pref_list,
 )
 from raphodo.rpdfile import FileType, Photo, SamplePhoto, SampleVideo, Video
+from raphodo.tools.utilities import remove_last_char_from_list_str
 from raphodo.ui.messagewidget import MessageWidget
 from raphodo.ui.viewutils import (
     standardMessageBox,
     translateDialogBoxButtons,
     translateMessageBoxButtons,
 )
-from raphodo.utilities import remove_last_char_from_list_str
+
+install_gettext()
 
 
 class PrefEditor(QTextEdit):
@@ -127,8 +111,8 @@ class PrefEditor(QTextEdit):
         super().__init__(parent)
         self.subfolder = subfolder
 
-        self.user_pref_list = []  # type: list[str]
-        self.user_pref_colors = []  # type: list[str]
+        self.user_pref_list: list[str] = []
+        self.user_pref_colors: list[str] = []
 
         self.heightMin = 0
         self.heightMax = 65000
@@ -186,7 +170,7 @@ class PrefEditor(QTextEdit):
         if key in (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Tab):
             return
 
-        cursor = self.textCursor()  # type: QTextCursor
+        cursor: QTextCursor = self.textCursor()
 
         if cursor.hasSelection() and key in (Qt.Key_Left, Qt.Key_Right):
             # Pass the key press on and let the selection deselect
@@ -332,11 +316,11 @@ class PrefEditor(QTextEdit):
             values.append(value)
 
         self.document().clear()
-        cursor = self.textCursor()  # type: QTextCursor
+        cursor: QTextCursor = self.textCursor()
         cursor.insertText("".join(values))
 
     def insertPrefValue(self, pref_value: str) -> None:
-        cursor = self.textCursor()  # type: QTextCursor
+        cursor: QTextCursor = self.textCursor()
         cursor.insertText(f"<{pref_value}>")
 
     def _setHighlighter(self) -> None:
@@ -384,8 +368,9 @@ class PrefEditor(QTextEdit):
         text = self.document().toPlainText()
         b = self.highlighter.boundaries
 
-        self.user_pref_list = pl = []  # type: list[str]
-        self.user_pref_colors = []  # type: list[str]
+        self.user_pref_list: list[str] = []
+        pl = self.user_pref_list
+        self.user_pref_colors: list[str] = []
 
         # Handle any text at the very beginning
         if b and b[0][0] > 0:
@@ -808,8 +793,8 @@ class CreatePreset(QDialog):
         flayout.addRow(_("Preset Name:"), self.name)
 
         buttonBox = QDialogButtonBox()
-        buttonBox.addButton(QDialogButtonBox.Cancel)  # type: QPushButton
-        self.saveButton = buttonBox.addButton(QDialogButtonBox.Save)  # type: QPushButton
+        buttonBox.addButton(QDialogButtonBox.Cancel)
+        self.saveButton: QPushButton = buttonBox.addButton(QDialogButtonBox.Save)
         self.saveButton.setEnabled(False)
         translateDialogBoxButtons(buttonBox)
         buttonBox.rejected.connect(self.reject)
@@ -1098,9 +1083,9 @@ class PrefDialog(QDialog):
         self.pushButtonSizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         self.mapper = QSignalMapper(self)
-        self.widget_mapper = dict()  # type: dict[str, QComboBox| QLabel]
-        self.pref_mapper = dict()  # type: dict[tuple[str, str, str], str]
-        self.pref_color = dict()  # type: dict[str, str]
+        self.widget_mapper: dict[str, QComboBox | QLabel] = dict()
+        self.pref_mapper: dict[tuple[str, str, str], str] = dict()
+        self.pref_color: dict[str, str] = dict()
 
         titles = [title for title in pref_defn if title not in (TEXT, SEPARATOR)]
         pref_colors = {title: color.value for title, color in zip(titles, CustomColors)}
@@ -1192,7 +1177,7 @@ class PrefDialog(QDialog):
         buttonBox = QDialogButtonBox(
             QDialogButtonBox.Cancel | QDialogButtonBox.Ok | QDialogButtonBox.Help
         )
-        self.helpButton = buttonBox.button(QDialogButtonBox.Help)  # type: QPushButton
+        self.helpButton: QPushButton = buttonBox.button(QDialogButtonBox.Help)
         self.helpButton.clicked.connect(self.helpButtonClicked)
         self.helpButton.setToolTip(_("Get help online..."))
         translateDialogBoxButtons(buttonBox)
@@ -1253,7 +1238,7 @@ class PrefDialog(QDialog):
         if widget == JOB_CODE:
             pref_value = _(JOB_CODE)
         else:
-            combobox = self.widget_mapper[widget]  # type: QComboBox
+            combobox: QComboBox = self.widget_mapper[widget]
             pref_value = combobox.currentText()
 
         self.editor.insertPrefValue(pref_value)

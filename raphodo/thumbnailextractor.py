@@ -1,25 +1,5 @@
-#!/usr/bin/env python3
-
-# Copyright (C) 2015-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2015-2024, Damon Lynch"
+# SPDX-FileCopyrightText: Copyright 2015-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # ruff: noqa: E402
 
@@ -55,8 +35,12 @@ from raphodo.interprocess import (
     ThumbnailExtractorArgument,
 )
 from raphodo.rpdfile import Photo, RPDFile, Video
+from raphodo.tools.utilities import (
+    image_large_enough_fdo,
+    show_errors,
+    stdchannel_redirected,
+)
 from raphodo.ui.filmstrip import add_filmstrip
-from raphodo.utilities import image_large_enough_fdo, show_errors, stdchannel_redirected
 
 have_gst = Gst.init_check(None)
 
@@ -568,6 +552,7 @@ class ThumbnailExtractor(LoadBalancerWorker):
             thumbnail = load_heif(
                 data.full_file_name_to_work_on, process_name=self.identity.decode()
             )
+            # TODO display heif image load problems to user
 
             if task == ExtractionTask.load_heif_and_exif_directly:
                 self.assign_photo_mdatatime(
@@ -643,7 +628,7 @@ class ThumbnailExtractor(LoadBalancerWorker):
             if self.check_for_stop(directive, content):
                 break
 
-            data = pickle.loads(content)  # type: ThumbnailExtractorArgument
+            data: ThumbnailExtractorArgument = pickle.loads(content)
 
             thumbnail_256 = png_data = None
             task = data.task

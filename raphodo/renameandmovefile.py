@@ -1,31 +1,11 @@
-#!/usr/bin/env python3
-
-# Copyright (C) 2011-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Copyright 2011-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 Generates names for files and folders, and renames (moves) files.
 
 Runs as a daemon process.
 """
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2011-2024, Damon Lynch"
 
 import contextlib
 import errno
@@ -44,7 +24,6 @@ with contextlib.suppress(locale.Error):
     # Use the default locale as defined by the LANG variable
     locale.setlocale(locale.LC_ALL, "")
 
-
 import raphodo.generatename as gn
 import raphodo.metadata.exiftool as exiftool
 from raphodo.constants import (
@@ -53,9 +32,10 @@ from raphodo.constants import (
     FileType,
     RenameAndMoveStatus,
 )
+from raphodo.internationalisation.install import install_gettext
 from raphodo.interprocess import (
     DaemonProcess,
-    RenameAndMoveFileData,  # noqa: F401
+    RenameAndMoveFileData,
     RenameAndMoveFileResults,
 )
 from raphodo.prefs.preferences import DownloadsTodayTracker, Preferences
@@ -75,11 +55,13 @@ from raphodo.problemnotification import (
 from raphodo.rpdfile import Photo, RPDFile, Video
 from raphodo.rpdsql import DownloadedSQL
 from raphodo.storage.storage import get_uri
-from raphodo.utilities import (
+from raphodo.tools.utilities import (
     datetime_roughly_equal,
     platform_c_maxint,
     stdchannel_redirected,
 )
+
+install_gettext()
 
 
 class SyncRawJpegStatus(Enum):
@@ -104,7 +86,7 @@ class SyncRawJpeg:
     """
 
     def __init__(self):
-        self.photos = {}  # type: dict[str, SyncRawJpegRecord]
+        self.photos: dict[str, SyncRawJpegRecord] = {}
 
     def add_download(
         self,
@@ -415,8 +397,9 @@ class RenameMoveFileWorker(DaemonProcess):
         rpd_file.status = DownloadStatus.download_failed
 
         try:
-            msg = "Failed to create file {}: {} {}".format(
-                rpd_file.download_full_file_name, inst.errno, inst.strerror
+            msg = (
+                f"Failed to create file {rpd_file.download_full_file_name}: "
+                f"{inst.errno} {inst.strerror}"
             )
             logging.error(msg)
         except AttributeError:
@@ -712,9 +695,9 @@ class RenameMoveFileWorker(DaemonProcess):
                 rpd_file.status = DownloadStatus.download_failed
                 self.check_for_fatal_name_generation_errors(rpd_file)
             else:
-                matching_pair = self.sync_raw_jpeg.matching_pair(
+                matching_pair: SyncRawJpegMatch = self.sync_raw_jpeg.matching_pair(
                     name=photo_name, extension=photo_ext, date_time=date_time
-                )  # type: SyncRawJpegMatch
+                )
                 sequence_to_use = matching_pair.sequence_number
                 if matching_pair.status == SyncRawJpegStatus.error_already_downloaded:
                     # this exact file has already been
@@ -1018,9 +1001,10 @@ class RenameMoveFileWorker(DaemonProcess):
             self.downloads_today_tracker, self.prefs.stored_sequence_no
         )
 
-        with stdchannel_redirected(
-            sys.stderr, os.devnull
-        ), exiftool.ExifTool() as self.exiftool_process:
+        with (
+            stdchannel_redirected(sys.stderr, os.devnull),
+            exiftool.ExifTool() as self.exiftool_process,
+        ):
             while True:
                 if i:
                     logging.debug("Finished %s. Getting next task.", i)
@@ -1030,7 +1014,7 @@ class RenameMoveFileWorker(DaemonProcess):
 
                 self.check_for_command(directive, content)
 
-                data = pickle.loads(content)  # type: RenameAndMoveFileData
+                data: RenameAndMoveFileData = pickle.loads(content)
                 if data.message == RenameAndMoveStatus.download_started:
                     # reinitialize downloads today and stored sequence number
                     # in case the user has updated them via the user interface

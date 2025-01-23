@@ -1,22 +1,7 @@
-# Copyright (C) 2015-2024 Damon Lynch <damonlynch@gmail.com>
-# Copyright (C) 2008-2015 Canonical Ltd.
-# Copyright (C) 2013 Bernard Baeyens
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Copyright 2015-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-FileCopyrightText: Copyright 2008-2015 Canonical Ltd.
+# SPDX-FileCopyrightText: Copyright 2013 Bernard Baeyens
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 The primary task of this module is to handle addition and removal of
@@ -42,14 +27,7 @@ The secondary task of this module is to provide miscellaneous services
 regarding mount points and XDG related functionality.
 """
 
-__author__ = "Damon Lynch"
-__copyright__ = (
-    "Copyright 2011-2024, Damon Lynch. Copyright 2008-2015 Canonical Ltd. Copyright"
-    " 2013 Bernard Baeyens."
-)
-
 # ruff: noqa: E402
-
 
 import functools
 import logging
@@ -67,6 +45,12 @@ from urllib.parse import quote
 from urllib.request import pathname2url
 
 import gi
+
+gi.require_version("GUdev", "1.0")
+gi.require_version("UDisks", "2.0")
+gi.require_version("GExiv2", "0.10")
+gi.require_version("GLib", "2.0")
+from gi.repository import GLib, GUdev, UDisks
 from PyQt5.QtCore import (
     QFileSystemWatcher,
     QObject,
@@ -79,7 +63,13 @@ from PyQt5.QtCore import (
 from showinfm import LinuxDesktop, linux_desktop, valid_file_manager
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-from raphodo.wslutils import (
+from raphodo.constants import Distro, PostCameraUnmountAction
+from raphodo.internationalisation.install import install_gettext
+from raphodo.tools.utilities import (
+    log_os_release,
+    remove_topmost_directory_from_path,
+)
+from raphodo.wsl.wslutils import (
     wsl_conf_mnt_location,
     wsl_filter_directories,
     wsl_home,
@@ -87,17 +77,7 @@ from raphodo.wslutils import (
     wsl_videos_folder,
 )
 
-gi.require_version("GUdev", "1.0")
-gi.require_version("UDisks", "2.0")
-gi.require_version("GExiv2", "0.10")
-gi.require_version("GLib", "2.0")
-from gi.repository import GLib, GUdev, UDisks
-
-from raphodo.constants import Distro, PostCameraUnmountAction
-from raphodo.utilities import (
-    log_os_release,
-    remove_topmost_directory_from_path,
-)
+install_gettext()
 
 logging_level = logging.DEBUG
 
@@ -326,7 +306,7 @@ class ValidMounts:
         :param only_external_mounts: if True, valid mounts must be under
         /media/<USER>, /run/media/<user>, or if WSL2 /mnt/
         """
-        self.validMountFolders = None  # type: tuple[str, ...] | None
+        self.validMountFolders: tuple[str] | None = None
         self.only_external_mounts = only_external_mounts
         self.is_wsl2 = _linux_desktop == LinuxDesktop.wsl2
         self._setValidMountFolders()
@@ -703,7 +683,7 @@ def get_fdo_cache_thumb_base_directory() -> str:
 # URIs
 _quoted_comma = quote(",")
 _valid_file_manager_probed = False
-_valid_file_manager = None  # type: str|None
+_valid_file_manager: str | None = None
 
 gvfs_file_managers = (
     "nautilus",
@@ -873,13 +853,13 @@ def udev_attributes(devname: str) -> UdevAttr | None:
     enumerator = GUdev.Enumerator.new(client)
     enumerator.add_match_property("DEVNAME", devname)
     for device in enumerator.execute():
-        model = device.get_property("ID_MODEL")  # type: str
+        model: str = device.get_property("ID_MODEL")
         if model is not None:
             is_mtp = (
                 device.get_property("ID_MTP_DEVICE") == "1"
                 or device.get_property("ID_MEDIA_PLAYER") == "1"
             )
-            vendor = device.get_property("ID_VENDOR")  # type: str
+            vendor: str = device.get_property("ID_VENDOR")
             model = model.replace("_", " ").strip()
             vendor = vendor.replace("_", " ").strip()
 
@@ -1153,7 +1133,7 @@ class UDisks2Monitor(QObject):
 
         # Track the paths of the mount points, which is useful when unmounting
         # objects.
-        self.known_mounts = {}  # type: dict[str, str]
+        self.known_mounts: dict[str, str] = {}
         for obj in self.manager.get_objects():
             path = obj.get_object_path()
             fs = obj.get_filesystem()
@@ -1477,10 +1457,10 @@ if have_gio:
             self.possibleCamera = re.compile(r"/usb/([\d]+)/([\d]+)")
             self.validMounts = validMounts
             # device_path: volume_name
-            self.camera_volumes_added = dict()  # type: dict[str, str]
-            self.camera_volumes_mounted = set()  # type: set[str]
+            self.camera_volumes_added: dict[str, str] = dict()
+            self.camera_volumes_mounted: set[str] = set()
 
-            self.manually_mounted_volumes = set()  # type: set[Gio.Volume]
+            self.manually_mounted_volumes: set[Gio.Volume] = set()
 
         @staticmethod
         def mountMightBeCamera(mount: Gio.Mount) -> bool:

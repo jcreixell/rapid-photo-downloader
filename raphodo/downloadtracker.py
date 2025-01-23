@@ -1,23 +1,5 @@
-# Copyright (C) 2011-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2011-2024, Damon Lynch"
+# SPDX-FileCopyrightText: Copyright 2011-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 import locale  # noqa: F401
 import logging
@@ -26,13 +8,11 @@ import time
 from collections import defaultdict
 
 from raphodo.constants import DownloadStatus, DownloadUpdateSeconds, FileType
+from raphodo.internationalisation.install import install_gettext
 from raphodo.rpdfile import RPDFile
 from raphodo.thumbnaildisplay import DownloadStats
 
-try:
-    Infinity = math.inf
-except AttributeError:
-    Infinity = float("inf")
+install_gettext()
 
 
 class DownloadTracker:
@@ -44,7 +24,7 @@ class DownloadTracker:
     # contemplate using settrs
 
     def __init__(self):
-        self.file_types_present_by_scan_id = dict()  # type: dict[int, str]
+        self.file_types_present_by_scan_id: dict[int, str] = dict()
         self._refresh_values()
 
     def _refresh_values(self):
@@ -52,43 +32,45 @@ class DownloadTracker:
         Reset values when a download is completed
         """
 
-        self.size_of_download_in_bytes_by_scan_id = dict()  # type: dict[int, int]
-        self.total_bytes_backed_up_by_scan_id = dict()  # type: dict[int, int]
-        self.size_of_photo_backup_in_bytes_by_scan_id = dict()  # type: dict[int, int]
-        self.size_of_video_backup_in_bytes_by_scan_id = dict()  # type: dict[int, int]
-        self.raw_size_of_download_in_bytes_by_scan_id = dict()  # type: dict[int, int]
-        self.total_bytes_copied_by_scan_id = dict()  # type: dict[int, int]
-        self.total_bytes_video_backed_up_by_scan_id = dict()  # type: dict[int, int]
-        self.no_files_in_download_by_scan_id = dict()  # type: dict[int, int]
-        self.no_photos_in_download_by_scan_id = dict()  # type: dict[int, int]
-        self.no_videos_in_download_by_scan_id = dict()  # type: dict[int, int]
-        self.no_post_download_thumb_generation_by_scan_id = dict()  # type: dict[int, int]
+        self.size_of_download_in_bytes_by_scan_id: dict[int, int] = dict()
+        self.total_bytes_backed_up_by_scan_id: dict[int, int] = dict()
+        self.size_of_photo_backup_in_bytes_by_scan_id: dict[int, int] = dict()
+        self.size_of_video_backup_in_bytes_by_scan_id: dict[int, int] = dict()
+        self.raw_size_of_download_in_bytes_by_scan_id: dict[int, int] = dict()
+        self.total_bytes_copied_by_scan_id: dict[int, int] = dict()
+        self.total_bytes_video_backed_up_by_scan_id: dict[int, int] = dict()
+        self.no_files_in_download_by_scan_id: dict[int, int] = dict()
+        self.no_photos_in_download_by_scan_id: dict[int, int] = dict()
+        self.no_videos_in_download_by_scan_id: dict[int, int] = dict()
+        self.no_post_download_thumb_generation_by_scan_id: dict[int, int] = dict()
 
         # 'Download count' tracks the index of the file being downloaded
         # into the list of files that need to be downloaded -- much like
         # a counter in a for loop, e.g. 'for i in list', where i is the counter
-        self.download_count_for_file_by_uid = dict()  # type: dict[bytes, int]
-        self.download_count_by_scan_id = dict()  # type: dict[int, int]
-        self.rename_chunk = dict()  # type: dict[int, int]
-        self.files_downloaded = dict()  # type: dict[int, int]
-        self.photos_downloaded = dict()  # type: dict[int, int]
-        self.videos_downloaded = dict()  # type: dict[int, int]
-        self.photo_failures = dict()  # type: dict[int, int]
-        self.video_failures = dict()  # type: dict[int, int]
-        self.warnings = dict()  # type: dict[int, int]
-        self.post_download_thumb_generation = dict()  # type: dict[int, int]
-        self.total_photos_downloaded = 0  # type: int
-        self.total_photo_failures = 0  # type: int
-        self.total_videos_downloaded = 0  # type: int
-        self.total_video_failures = 0  # type: int
-        self.total_warnings = 0  # type: int
-        self.total_bytes_to_download = 0  # type: int
-        self.total_bytes_to_backup = 0  # type: int
-        self.backups_performed_by_uid = defaultdict(int)  # type: defaultdict[bytes, list[int,...]]
-        self.backups_performed_by_scan_id = defaultdict(int)  # type: defaultdict[int, list[int,...]]
-        self.no_backups_to_perform_by_scan_id = dict()  # type: dict[int, int]
+        self.download_count_for_file_by_uid: dict[bytes, int] = dict()
+        self.download_count_by_scan_id: dict[int, int] = dict()
+        self.rename_chunk: dict[int, int] = dict()
+        self.files_downloaded: dict[int, int] = dict()
+        self.photos_downloaded: dict[int, int] = dict()
+        self.videos_downloaded: dict[int, int] = dict()
+        self.photo_failures: dict[int, int] = dict()
+        self.video_failures: dict[int, int] = dict()
+        self.warnings: dict[int, int] = dict()
+        self.post_download_thumb_generation: dict[int, int] = dict()
+        self.total_photos_downloaded: int = 0
+        self.total_photo_failures: int = 0
+        self.total_videos_downloaded: int = 0
+        self.total_video_failures: int = 0
+        self.total_warnings: int = 0
+        self.total_bytes_to_download: int = 0
+        self.total_bytes_to_backup: int = 0
+        self.backups_performed_by_uid: defaultdict[bytes, list[int]] = defaultdict(int)
+        self.backups_performed_by_scan_id: defaultdict[int, list[int]] = defaultdict(
+            int
+        )
+        self.no_backups_to_perform_by_scan_id: dict[int, int] = dict()
         self.auto_delete = defaultdict(list)
-        self._devices_removed_mid_download = set()  # type: set[int]
+        self._devices_removed_mid_download: set[int] = set()
 
     def set_no_backup_devices(
         self, no_photo_backup_devices: int, no_video_backup_devices: int
@@ -112,9 +94,9 @@ class DownloadTracker:
             + stats.no_videos * self.no_video_backup_devices
         )
         total_bytes = stats.photos_size_in_bytes + stats.videos_size_in_bytes
-        self.no_post_download_thumb_generation_by_scan_id[
-            scan_id
-        ] = stats.post_download_thumb_generation
+        self.no_post_download_thumb_generation_by_scan_id[scan_id] = (
+            stats.post_download_thumb_generation
+        )
 
         # rename_chunk is used to account for the time it takes to rename a
         # file, and potentially to generate thumbnails after it has renamed.
@@ -309,9 +291,9 @@ class DownloadTracker:
         ]
         self.files_downloaded[scan_id] = self.no_files_in_download_by_scan_id[scan_id]
 
-        self.total_bytes_copied_by_scan_id[
-            scan_id
-        ] = self.size_of_download_in_bytes_by_scan_id[scan_id]
+        self.total_bytes_copied_by_scan_id[scan_id] = (
+            self.size_of_download_in_bytes_by_scan_id[scan_id]
+        )
 
         self.total_bytes_backed_up_by_scan_id[scan_id] = (
             self.size_of_photo_backup_in_bytes_by_scan_id[scan_id]
@@ -449,7 +431,7 @@ class TimeCheck:
         self.total_downloaded_so_far = 0
         self.total_download_size = 0
         self.size_mark = 0
-        self.smoothed_speed = None  # type: float|None
+        self.smoothed_speed: float | None = None
 
     def increment(self, bytes_downloaded):
         self.total_downloaded_so_far += bytes_downloaded
@@ -486,15 +468,15 @@ class TimeCheck:
 
 class TimeForDownload:
     def __init__(self, size: int) -> None:
-        self.time_remaining = Infinity  # type: float
+        self.time_remaining: float = math.inf
 
-        self.total_downloaded_so_far = 0  # type: int
-        self.total_download_size = size  # type: int
-        self.size_mark = 0  # type: int
-        self.smoothed_speed = None  # type: float|None
+        self.total_downloaded_so_far: int = 0
+        self.total_download_size: int = size
+        self.size_mark: int = 0
+        self.smoothed_speed: float | None = None
 
-        self.time_mark = time.time()  # type: float
-        self.smoothed_speed = None  # type: float|None
+        self.time_mark: float = time.time()
+        self.smoothed_speed: float | None = None
 
 
 class TimeRemaining:
@@ -518,7 +500,7 @@ class TimeRemaining:
         if scan_id not in self.times:
             return
 
-        t = self.times[scan_id]  # type: TimeForDownload
+        t: TimeForDownload = self.times[scan_id]
 
         t.total_downloaded_so_far += bytes_downloaded
         now = time.time()
@@ -541,7 +523,7 @@ class TimeRemaining:
             amt_to_download = t.total_download_size - t.total_downloaded_so_far
 
             if not t.smoothed_speed:
-                t.time_remaining = Infinity
+                t.time_remaining = math.inf
             else:
                 time_remaining = amt_to_download / t.smoothed_speed
                 # Use the previous value to help determine the current value,
@@ -566,7 +548,7 @@ class TimeRemaining:
         if math.isinf(time_remaining):
             return None
 
-        time_remaining = round(time_remaining)  # type: int
+        time_remaining: int = round(time_remaining)
         if time_remaining < 4:
             # Be friendly in the last few seconds
             return _("A few seconds")
@@ -603,7 +585,7 @@ def get_time_left(aSeconds: float, aLastSec: float | None = None) -> float:
     """
 
     if aLastSec is None:
-        aLastSec = Infinity
+        aLastSec = math.inf
 
     if aSeconds < 0:
         return aLastSec

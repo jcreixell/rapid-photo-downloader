@@ -1,27 +1,9 @@
-# Copyright (C) 2017-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Copyright 2017-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 Dialog window to show and manipulate selected user preferences
 """
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2017-2024, Damon Lynch"
 
 import logging
 import webbrowser
@@ -72,7 +54,11 @@ from raphodo.constants import (
     MarkRawJpeg,
     TreatRawJpeg,
 )
-from raphodo.metadata.fileformats import (
+from raphodo.internationalisation.utilities import (
+    make_internationalized_list,
+    thousands,
+)
+from raphodo.metadata.fileextensions import (
     ALL_KNOWN_EXTENSIONS,
     AUDIO_EXTENSIONS,
     PHOTO_EXTENSIONS,
@@ -80,20 +66,19 @@ from raphodo.metadata.fileformats import (
     VIDEO_THUMBNAIL_EXTENSIONS,
 )
 from raphodo.prefs.preferences import Preferences
+from raphodo.tools.utilities import (
+    available_cpu_count,
+    available_languages,
+    current_version_is_dev_version,
+    data_file_path,
+    format_size_for_user,
+)
 from raphodo.ui.viewutils import (
     QNarrowListWidget,
     StyledLinkLabel,
     darkModePixmap,
     standardMessageBox,
     translateDialogBoxButtons,
-)
-from raphodo.utilities import (
-    available_cpu_count,
-    available_languages,
-    current_version_is_dev_version,
-    format_size_for_user,
-    make_internationalized_list,
-    thousands,
 )
 
 
@@ -161,15 +146,15 @@ class PreferencesDialog(QDialog):
                 _("Miscellaneous"),
             )
             icons = (
-                ":/prefs/devices.svg",
-                ":/prefs/language.svg",
-                ":/prefs/automation.svg",
-                ":/prefs/thumbnails.svg",
-                ":/prefs/timezone.svg",
-                ":/prefs/error-handling.svg",
-                ":/prefs/warnings.svg",
-                ":/prefs/consolidation.svg",
-                ":/prefs/miscellaneous.svg",
+                "prefs/bw/devices.svg",
+                "prefs/bw/language.svg",
+                "prefs/bw/automation.svg",
+                "prefs/bw/thumbnails.svg",
+                "prefs/bw/timezone.svg",
+                "prefs/bw/error-handling.svg",
+                "prefs/bw/warnings.svg",
+                "prefs/bw/consolidation.svg",
+                "prefs/bw/miscellaneous.svg",
             )
         else:
             self.chooser_items = (
@@ -183,20 +168,20 @@ class PreferencesDialog(QDialog):
                 _("Miscellaneous"),
             )
             icons = (
-                ":/prefs/devices.svg",
-                ":/prefs/language.svg",
-                ":/prefs/automation.svg",
-                ":/prefs/thumbnails.svg",
-                ":/prefs/timezone.svg",
-                ":/prefs/error-handling.svg",
-                ":/prefs/warnings.svg",
-                ":/prefs/miscellaneous.svg",
+                "prefs/bw/devices.svg",
+                "prefs/bw/language.svg",
+                "prefs/bw/automation.svg",
+                "prefs/bw/thumbnails.svg",
+                "prefs/bw/timezone.svg",
+                "prefs/bw/error-handling.svg",
+                "prefs/bw/warnings.svg",
+                "prefs/bw/miscellaneous.svg",
             )
 
         for prefIcon, label in zip(icons, self.chooser_items):
             # make the selected icons be the same colour as the selected text
             icon = QIcon()
-            pixmap = QPixmap(prefIcon)
+            pixmap = QPixmap(data_file_path(prefIcon))
             selected = QPixmap(pixmap.size())
             selected.fill(selectedColour)
             selected.setMask(pixmap.createMaskFromColor(Qt.transparent))
@@ -1061,12 +1046,14 @@ class PreferencesDialog(QDialog):
             | QDialogButtonBox.Help
         )
         translateDialogBoxButtons(buttons)
-        self.restoreButton = buttons.button(QDialogButtonBox.RestoreDefaults)  # type: QPushButton
+        self.restoreButton: QPushButton = buttons.button(
+            QDialogButtonBox.RestoreDefaults
+        )
         self.restoreButton.clicked.connect(self.restoreDefaultsClicked)
-        self.helpButton = buttons.button(QDialogButtonBox.Help)  # type: QPushButton
+        self.helpButton: QPushButton = buttons.button(QDialogButtonBox.Help)
         self.helpButton.clicked.connect(self.helpButtonClicked)
         self.helpButton.setToolTip(_("Get help online..."))
-        self.closeButton = buttons.button(QDialogButtonBox.Close)  # type: QPushButton
+        self.closeButton: QPushButton = buttons.button(QDialogButtonBox.Close)
         self.closeButton.clicked.connect(self.close)
 
         controlsLayout = QHBoxLayout()
@@ -1412,7 +1399,7 @@ class PreferencesDialog(QDialog):
     @pyqtSlot()
     def removeDeviceClicked(self) -> None:
         row = self.knownDevices.currentRow()
-        item = self.knownDevices.takeItem(row)  # type: QListWidgetItem
+        item: QListWidgetItem = self.knownDevices.takeItem(row)
         known_device_type = item.type()
         if known_device_type == KnownDeviceType.volume_whitelist:
             self.prefs.del_list_value("volume_whitelist", item.text())

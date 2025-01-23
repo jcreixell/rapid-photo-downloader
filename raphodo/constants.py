@@ -1,24 +1,5 @@
-# Copyright (C) 2007-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2007-2024, Damon Lynch"
+# SPDX-FileCopyrightText: Copyright 2007-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from enum import Enum, Flag, IntEnum, auto
 
@@ -27,11 +8,6 @@ from PyQt5.QtGui import QColor, QFont, QFontMetrics
 
 PROGRAM_NAME = "Rapid Photo Downloader"
 logfile_name = "rapid-photo-downloader.log"
-
-
-# If set to True, the ability to check for a new version will be removed
-# from the user interface and disabled in program logic.
-disable_version_check = False
 
 
 class ConflictResolution(IntEnum):
@@ -93,7 +69,6 @@ Downloaded = (
     DownloadStatus.backup_problem,
 )
 
-
 DownloadWarning = {
     DownloadStatus.downloaded_with_warning,
     DownloadStatus.backup_problem,
@@ -103,14 +78,12 @@ DownloadFailure = {
     DownloadStatus.download_failed,
 }
 
-
 download_status_error_severity = {
     DownloadStatus.downloaded_with_warning: ErrorType.warning,
     DownloadStatus.backup_problem: ErrorType.serious_error,
     DownloadStatus.download_and_backup_failed: ErrorType.serious_error,
     DownloadStatus.download_failed: ErrorType.serious_error,
 }
-
 
 DownloadUpdateMilliseconds = 1000
 DownloadUpdateSeconds = DownloadUpdateMilliseconds / 1000
@@ -167,9 +140,16 @@ class WindowsDriveType(IntEnum):
 
 
 class DestinationDisplayType(Enum):
-    folder_only = 1
-    usage_only = 2
-    folders_and_usage = 3
+    folder_only = 1  # folder icon, folder name, and the menu icon
+    usage_only = 2  # Projected Storage Use display
+    folders_and_usage = 3  # combines types one and two
+
+
+class DestinationDisplayStatus(IntEnum):
+    valid = auto()
+    unwritable = auto()
+    does_not_exist = auto()
+    no_storage_space = auto()
 
 
 class ExifSource(Enum):
@@ -251,9 +231,15 @@ class ThumbnailSize(IntEnum):
     height = 120
 
 
-class ApplicationState(Enum):
-    normal = 1
-    exiting = 2
+class ApplicationState(Flag):
+    startup = auto()
+    normal = auto()
+    exiting = auto()
+    timeline_generating = auto()
+    timeline_generated = auto()
+
+CORE_APPLICATION_STATE_MASK = ApplicationState.startup | ApplicationState.normal | ApplicationState.exiting
+TIMELINE_APPLICATION_STATE_MASK = ApplicationState.timeline_generating | ApplicationState.timeline_generated
 
 
 class PostCameraUnmountAction(Enum):
@@ -373,12 +359,12 @@ class NameGenerationType(Enum):
     video_subfolder = 4
 
 
-COLOR_RED_HTML = "#cb493f"
+COLOR_RED_WARNING_HTML = "#c42f12"
 
 
 class CustomColors(Enum):
     color1 = "#7a9c38"  # green
-    color2 = COLOR_RED_HTML  # red
+    color2 = "#cb493f"  # red
     color3 = "#d17109"  # orange
     color4 = "#4D8CDC"  # blue
     color5 = "#5f6bfe"  # purple
@@ -388,14 +374,12 @@ class CustomColors(Enum):
 
 ButtonHoverIntensity = 110
 
-
 PaleGray = "#d7d6d5"
 DarkGray = "#35322f"
 MediumGray = "#5d5b59"
 DoubleDarkGray = "#1e1b18"
 
 DarkModeMediumGray = "#2b2b2b"
-
 
 ExtensionColorDict = {
     FileExtension.raw: CustomColors.color1,
@@ -480,7 +464,6 @@ DeviceShadingIntensity = 104
 # How many steps with which to highlight thumbnail cells
 FadeSteps = 20
 FadeMilliseconds = 700
-
 
 # horizontal and vertical margin for thumbnail rectangles
 thumbnail_margin = 10
@@ -790,7 +773,6 @@ filtered_file_browser_directories = {
     "System Volume Information",
     "msdownld.tmp",
 }
-
 
 non_system_root_folders = [
     "/home",

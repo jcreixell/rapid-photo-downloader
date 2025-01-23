@@ -1,5 +1,6 @@
 # PyExifTool <http://github.com/smarnach/pyexiftool>
-# Copyright 2012 Sven Marnach
+# SPDX-FileCopyrightText: Copyright 2012 Sven Marnach
+# SPDX-License-Identifier: GPL-3.0-or-later OR BSD-3-Clause
 
 # This file is part of PyExifTool.
 #
@@ -52,6 +53,7 @@ Example usage::
                                          d["EXIF:DateTimeOriginal"]))
 
 Modified by Damon Lynch:
+Use SPDX licensing and copyright
 Added "common arguments".
 Grouping tag names is no longer the default.
 The function set_pdeathsig is used to automatically terminate the process when the
@@ -61,7 +63,6 @@ Added execute_binary()
 Update to Python 3.10 conventions.
 """
 
-
 import codecs
 import json
 import os
@@ -70,7 +71,7 @@ import sys
 import warnings
 
 from raphodo.programversions import exiftool_version_info
-from raphodo.utilities import set_pdeathsig
+from raphodo.tools.utilities import set_pdeathsig
 
 basestring = (bytes, str)
 

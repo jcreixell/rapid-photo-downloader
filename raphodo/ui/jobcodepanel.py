@@ -1,33 +1,15 @@
-# Copyright (C) 2017-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Copyright 2017-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 Display, edit and apply Job Codes.
 """
 
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2017-2024, Damon Lynch"
-
 import logging
 
 from PyQt5.QtCore import QRegularExpression, Qt, pyqtSlot
 from PyQt5.QtGui import (
-    QFont,  # noqa: F401
+    QFont,
     QIcon,
     QPalette,
     QRegularExpressionValidator,
@@ -49,7 +31,9 @@ from PyQt5.QtWidgets import (
 )
 
 from raphodo.constants import JobCodeSort
+from raphodo.internationalisation.install import install_gettext
 from raphodo.prefs.preferences import Preferences
+from raphodo.tools.utilities import data_file_path
 from raphodo.ui.chevroncombo import ChevronCombo
 from raphodo.ui.messagewidget import MessageButton, MessageWidget
 from raphodo.ui.panelview import QPanelView
@@ -61,6 +45,8 @@ from raphodo.ui.viewutils import (
     standardMessageBox,
     translateDialogBoxButtons,
 )
+
+install_gettext()
 
 
 class JobCodeDialog(QDialog):
@@ -76,13 +62,13 @@ class JobCodeDialog(QDialog):
         """
 
         super().__init__(parent)
-        self.rapidApp = parent  # type: 'RapidWindow'
-        self.prefs = self.rapidApp.prefs  # type: Preferences
+        self.rapidApp = parent
+        self.prefs: Preferences = self.rapidApp.prefs
         thumbnailModel = self.rapidApp.thumbnailModel
 
         # Whether the user has opened this dialog before a download starts without
         # having selected any files first
-        no_selection_made = None  # type: bool|None
+        no_selection_made: bool | None = None
 
         if on_download:
             directive = _("Enter a new Job Code, or select a previous one")
@@ -171,7 +157,9 @@ class JobCodeDialog(QDialog):
         else:
             self.jobCodeComboBox.setInsertPolicy(QComboBox.InsertAlphabetically)
 
-        icon = QIcon(":/rapid-photo-downloader.svg").pixmap(standardIconSize())
+        icon = QIcon(data_file_path("rapid-photo-downloader.svg")).pixmap(
+            standardIconSize()
+        )
         iconLabel = QLabel()
         iconLabel.setPixmap(icon)
         iconLabel.setAlignment(Qt.AlignTop | Qt.AlignLeft)
@@ -283,7 +271,7 @@ class JobCodeOptionsWidget(FlexiFrame):
             self.sortOrder.setCurrentIndex(self.prefs.job_code_sort_order)
         self.sortOrder.currentIndexChanged.connect(self.sortOrderChanged)
 
-        font = self.font()  # type: QFont
+        font: QFont = self.font()
         font.setPointSize(font.pointSize() - 2)
         for widget in (self.sortLabel, self.sortCombo, self.sortOrder):
             widget.setFont(font)
@@ -493,7 +481,7 @@ class JobCodeOptionsWidget(FlexiFrame):
     @pyqtSlot()
     def removeButtonClicked(self) -> None:
         row = self.jobCodesWidget.currentRow()
-        item = self.jobCodesWidget.takeItem(row)  # type: QListWidgetItem
+        item: QListWidgetItem = self.jobCodesWidget.takeItem(row)
         try:
             self.prefs.del_list_value(key="job_codes", value=item.text())
         except KeyError:

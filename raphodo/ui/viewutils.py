@@ -1,23 +1,5 @@
-# Copyright (C) 2015-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2015-2024, Damon Lynch"
+# SPDX-FileCopyrightText: Copyright 2015-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 import functools
 import sys
@@ -77,8 +59,12 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-import raphodo.xsettings as xsettings
+import raphodo.tools.xsettings as xsettings
 from raphodo.constants import HeaderBackgroundName, ScalingDetected
+from raphodo.internationalisation.install import install_gettext
+from raphodo.tools.utilities import data_file_path
+
+install_gettext()
 
 QT5_VERSION = parse(QT_VERSION_STR)
 
@@ -129,8 +115,8 @@ class RowTracker:
     """
 
     def __init__(self) -> None:
-        self.row_to_id = {}  # type: dict[int, int]
-        self.id_to_row = {}  # type: dict[int, int]
+        self.row_to_id: dict[int, int] = {}
+        self.id_to_row: dict[int, int] = {}
 
     def __getitem__(self, row) -> int:
         return self.row_to_id[row]
@@ -759,7 +745,7 @@ def standardMessageBox(
             if icon:
                 iconPixmap = icon.pixmap(standardIconSize())
             else:
-                iconPixmap = QIcon(":/rapid-photo-downloader.svg").pixmap(
+                iconPixmap = QIcon(data_file_path("rapid-photo-downloader.svg")).pixmap(
                     standardIconSize()
                 )
         msgBox.setIconPixmap(iconPixmap)
@@ -876,7 +862,11 @@ def coloredPixmap(
     if isinstance(color, str):
         color = QColor(color)
     if path is not None:
-        pixmap = QIcon(path).pixmap(size) if size else QPixmap(path)
+        pixmap = (
+            QIcon(data_file_path(path)).pixmap(size)
+            if size
+            else QPixmap(data_file_path(path))
+        )
     else:
         assert pixmap is not None
 
@@ -903,9 +893,9 @@ def darkModePixmap(
         if pixmap:
             return pixmap
         if size:
-            return QIcon(path).pixmap(size)
+            return QIcon(data_file_path(path)).pixmap(size)
         else:
-            return QPixmap(path)
+            return QPixmap(data_file_path(path))
 
 
 def darkModeIcon(
@@ -932,7 +922,7 @@ def darkModeIcon(
         if icon:
             return icon
         else:
-            return QIcon(path)
+            return QIcon(data_file_path(path))
 
 
 def menuHoverColor() -> QColor:

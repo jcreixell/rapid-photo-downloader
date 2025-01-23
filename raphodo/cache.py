@@ -1,22 +1,5 @@
-#!/usr/bin/env python3
-
-# Copyright (C) 2015-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Copyright 2015-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 Rapid Photo Downloader deals with three types of cache:
@@ -46,9 +29,6 @@ For the fdo cache specs, see:
 http://specifications.freedesktop.org/thumbnail-spec/thumbnail-spec-latest.html
 """
 
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2015-2024, Damon Lynch"
-
 import hashlib
 import logging
 import os
@@ -68,7 +48,7 @@ from raphodo.storage.storage import (
     get_fdo_cache_thumb_base_directory,
     get_program_cache_directory,
 )
-from raphodo.utilities import GenerateRandomFileName
+from raphodo.tools.utilities import GenerateRandomFileName
 
 GetThumbnail = namedtuple("GetThumbnail", "disk_status, thumbnail, path")
 GetThumbnailPath = namedtuple(
@@ -246,9 +226,8 @@ class Cache:
             os.chmod(path, 0o600)
             if generation_failed:
                 logging.debug(
-                    "Wrote {}x{} thumbnail {} for {}".format(
-                        thumbnail.width(), thumbnail.height(), path, uri
-                    )
+                    f"Wrote {thumbnail.width()}x{thumbnail.height()} thumbnail "
+                    f"{path} for {uri}"
                 )
             return md5_name
         else:

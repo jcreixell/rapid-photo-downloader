@@ -1,26 +1,6 @@
-#!/usr/bin/env python3
-
-# Copyright (C) 2015-2024 Damon Lynch <damonlynch@gmail.com>
-# Copyright (C) 2012-2015 Jim Easterbrook <jim@jim-easterbrook.me.uk>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2015-2024, Damon Lynch. Copyright 2012-2015 Jim Easterbrook."
+# SPDX-FileCopyrightText: Copyright 2015-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-FileCopyrightText: Copyright 2012-2015 Jim Easterbrook <jim@jim-easterbrook.me.uk>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
 import os
@@ -31,7 +11,7 @@ import gphoto2 as gp
 from raphodo.cameraerror import CameraProblemEx
 from raphodo.constants import CameraErrorCode
 from raphodo.storage.storage import StorageSpace, udev_attributes
-from raphodo.utilities import format_size_for_user
+from raphodo.tools.utilities import format_size_for_user
 
 
 def python_gphoto2_version():
@@ -116,7 +96,6 @@ def camera_is_mtp_device(camera_port: str) -> bool:
 
 
 class Camera:
-
     """Access a camera via libgphoto2."""
 
     def __init__(
@@ -154,7 +133,7 @@ class Camera:
 
         self._select_camera(model, port)
 
-        self.specific_folders = None  # type: list[str]|None
+        self.specific_folders: list[str] | None = None
         self.specific_folder_located = False
         self._dual_slots_active = False
 
@@ -325,7 +304,7 @@ class Camera:
     def get_exif_extract(
         self, folder: str, file_name: str, size_in_bytes: int = 200
     ) -> bytearray:
-        """ "
+        """
         Attempt to read only the exif portion of the file.
 
         Assumes exif is located at the beginning of the file.
@@ -940,11 +919,9 @@ def dump_camera_details() -> None:
                     print("\n{}\n{}".format(title, "-" * len(title)))
                     for ss in sc:
                         print(
-                            "\nPath: {}\nCapacity: {}\nFree {}".format(
-                                ss.path,
-                                format_size_for_user(ss.bytes_total),
-                                format_size_for_user(ss.bytes_free),
-                            )
+                            f"\nPath: {ss.path}\n"
+                            f"Capacity: {format_size_for_user(ss.bytes_total)}\n"
+                            f"Free {format_size_for_user(ss.bytes_free)}"
                         )
                 sd = c.get_storage_descriptions()
                 if not sd:

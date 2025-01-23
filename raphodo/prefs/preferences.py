@@ -1,25 +1,5 @@
-#!/usr/bin/env python3
-
-# Copyright (C) 2011-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2011-2024, Damon Lynch"
+# SPDX-FileCopyrightText: Copyright 2011-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 import datetime
 import logging
@@ -58,7 +38,9 @@ from raphodo.generatenameconfig import (
     check_pref_valid,
     upgrade_pre090a4_rename_pref,
 )
-from raphodo.metadata.fileformats import ALL_KNOWN_EXTENSIONS
+from raphodo.internationalisation.install import install_gettext
+from raphodo.internationalisation.utilities import make_internationalized_list
+from raphodo.metadata.fileextensions import ALL_KNOWN_EXTENSIONS
 from raphodo.storage.storage import (
     get_media_dir,
     platform_photos_directory,
@@ -66,11 +48,12 @@ from raphodo.storage.storage import (
     platform_videos_directory,
     platform_videos_identifier,
 )
-from raphodo.utilities import (
+from raphodo.tools.utilities import (
     available_cpu_count,
     default_thumbnail_process_count,
-    make_internationalized_list,
 )
+
+install_gettext()
 
 
 class ScanPreferences:
@@ -357,8 +340,9 @@ class Preferences:
         mark_raw_jpeg=3,
         # introduced in 0.9.6b1:
         auto_scroll=True,
-        # If you change the language setting update it in __init__.py too, where it is
-        # read directly without using this class.
+        # If you change the language key name (here), update it in
+        # internationalisation/install.py and internationalisation/utilities.py too,
+        # where it is read directly without using this class.
         language="",
         show_system_folders=False,  # Introduced in 0.9.27b2
         survey_countdown=10,  # Introduced in 0.9.29

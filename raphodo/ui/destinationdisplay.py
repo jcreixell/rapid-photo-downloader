@@ -1,41 +1,28 @@
-# Copyright (C) 2016-2024 Damon Lynch <damonlynch@gmail.com>
-
-# This file is part of Rapid Photo Downloader.
-#
-# Rapid Photo Downloader is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Rapid Photo Downloader is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Rapid Photo Downloader.  If not,
-# see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch <damonlynch@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 Display download destination details
 """
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2016-2024, Damon Lynch"
 
 import logging
 import math
 import os
 from collections import defaultdict
 
-from PyQt5.QtCore import QPoint, QRect, QSize, QStorageInfo, Qt, pyqtSlot
+from PyQt5.QtCore import QPoint, QRect, QRectF, QSize, QStorageInfo, Qt, pyqtSlot
 from PyQt5.QtGui import (
+    QBrush,
     QColor,
+    QFont,
+    QFontMetrics,
     QIcon,
     QMouseEvent,
+    QPainterPath,
     QPaintEvent,
     QPalette,
-    QPixmap,  # noqa: F401
+    QPen,
+    QPixmap,
 )
 from PyQt5.QtWidgets import (
     QAction,
@@ -50,11 +37,13 @@ from PyQt5.QtWidgets import (
 )
 
 from raphodo.constants import (
-    COLOR_RED_HTML,
+    COLOR_RED_WARNING_HTML,
     CustomColors,
     DestinationDisplayMousePos,
+    DestinationDisplayStatus,
     DestinationDisplayTooltipState,
     DestinationDisplayType,
+    DeviceDisplayPadding,
     DisplayingFilesOfType,
     FileType,
     NameGenerationType,
@@ -76,12 +65,13 @@ from raphodo.generatenameconfig import (
     CustomPresetSubfolderLists,
     CustomPresetSubfolderNames,
 )
-from raphodo.rpdfile import FileTypeCounter, Photo, Video  # noqa: F401
+from raphodo.internationalisation.utilities import thousands
+from raphodo.rpdfile import FileTypeCounter, Photo, Video
 from raphodo.storage.storage import StorageSpace, get_mount_size, get_path_display_name
+from raphodo.tools.utilities import data_file_path, format_size_for_user
 from raphodo.ui.devicedisplay import BodyDetails, DeviceDisplay, icon_size
 from raphodo.ui.nameeditor import PrefDialog, make_subfolder_menu_entry
 from raphodo.ui.viewutils import darkModePixmap, paletteMidPen
-from raphodo.utilities import format_size_for_user, thousands
 
 
 def make_body_details(
@@ -266,12 +256,12 @@ class DestinationDisplay(QWidget):
         else:
             self.prefs = None
 
-        self.storage_space = None  # type: StorageSpace|None
+        self.storage_space: StorageSpace | None = None
 
-        self.menu_actions = []  # type: list[QAction]
+        self.menu_actions: list[QAction] = []
         if menu:
             pixmap = darkModePixmap(
-                path=":/icons/settings.svg",
+                path="icons/settings.svg",
                 size=QSize(100, 100),
                 soften_regular_mode_color=True,
             )
@@ -289,33 +279,28 @@ class DestinationDisplay(QWidget):
         self.deviceDisplay = DeviceDisplay(parent=self, menuButtonIcon=menuIcon)
         self.deviceDisplay.widthChanged.connect(self.widthChanged)
         size = icon_size()
-        self.pixmap = QIcon(":/icons/folder.svg").pixmap(QSize(size, size))  # type: QPixmap
+        self.pixmap: QPixmap = QIcon(data_file_path("icons/folder.svg")).pixmap(
+            QSize(size, size)
+        )
         self.pixmap = darkModePixmap(pixmap=self.pixmap)
         self.display_name = ""
         self.photos_size_to_download = self.videos_size_to_download = 0
-        self.files_to_display = None  # type: DisplayingFilesOfType|None
+        self.files_to_display: DisplayingFilesOfType | None = None
         self.marked = FileTypeCounter()
-        self.display_type = None  # type: DestinationDisplayType|None
+        self.display_type: DestinationDisplayType | None = None
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
 
-        self.sample_rpd_file = None  # type: Photo| Video|None
+        self.sample_rpd_file: Photo | Video | None = None
 
-        self.os_stat_device = 0  # type: int
-        self._downloading_to = defaultdict(set)  # type: DownloadingTo
+        self.os_stat_device: int = 0
+        self._downloading_to: DownloadingTo = defaultdict(set)
 
         self.midPen = paletteMidPen()
         self.frame_width = QApplication.style().pixelMetric(QStyle.PM_DefaultFrameWidth)
         self.container_vertical_scrollbar_visible = None
 
-        self.valid = True
-        self.invalidColor = QColor(COLOR_RED_HTML)
-        # Translators: the lack of a period at the end is deliberate
-        _("Unwritable destination")
-        # Translators: the lack of a period at the end is deliberate
-        _("Folder does not exist")
-        # Translators: the lack of a period at the end is deliberate
-        _("Insufficient storage space")
-
+        self.status = DestinationDisplayStatus.valid
+        self.invalidColor = QColor(COLOR_RED_WARNING_HTML)
 
     @property
     def downloading_to(self) -> DownloadingTo:
@@ -426,7 +411,7 @@ class DestinationDisplay(QWidget):
         index, preset_names, preset_pref_lists = self.getPresetIndex()
         assert index < MAX_DOWNLOAD_SUBFOLDER_MENU_ENTRIES
 
-        action = self.menu_actions[index]  # type: QAction
+        action: QAction = self.menu_actions[index]
         action.setChecked(True)
 
         # Set visibility of custom presets menu items to match how many we are
@@ -591,6 +576,14 @@ class DestinationDisplay(QWidget):
     def containerVerticalScrollBar(self, visible: bool) -> None:
         self.container_vertical_scrollbar_visible = visible
 
+    @staticmethod
+    def invalidStatusHeight() -> int:
+        return QFontMetrics(QFont()).height() + DeviceDisplayPadding * 2
+
+    def setStatus(self, status: DestinationDisplayStatus)-> None:
+        self.status = status
+        self.update()
+
     def paintEvent(self, event: QPaintEvent) -> None:
         """
         Render the custom widget
@@ -599,11 +592,11 @@ class DestinationDisplay(QWidget):
         painter = QStylePainter()
         painter.begin(self)
 
-        x = 0
-        y = 0
+        x: int = 0
+        y: int = 0
         width = self.width()
 
-        rect = self.rect()  # type: QRect
+        rect: QRect = self.rect()
         palette = QPalette()
         backgroundColor = palette.base().color()
 
@@ -648,6 +641,80 @@ class DestinationDisplay(QWidget):
             )
             y = y + self.deviceDisplay.dc.device_name_height
 
+            if self.status != DestinationDisplayStatus.valid:
+                displayPen = painter.pen()
+                match self.status:
+                    case DestinationDisplayStatus.unwritable:
+                        # Translators: the lack of a period at the end is deliberate
+                        text = _("Unwritable destination")
+                    case DestinationDisplayStatus.does_not_exist:
+                        # Translators: the lack of a period at the end is deliberate
+                        text = _("Folder does not exist")
+                    case DestinationDisplayStatus.no_storage_space:
+                        # Translators: the lack of a period at the end is deliberate
+                        text = _("Insufficient storage space")
+                    case _:
+                        raise NotImplementedError(
+                            "Unhandled destination display status"
+                        )
+
+                y = y - DeviceDisplayPadding  # remove the bottom padding
+
+                status_height = self.invalidStatusHeight()
+                statusRect = QRect(x, y, width, status_height)
+                painter.fillRect(statusRect, self.invalidColor)
+
+                text_height = QFontMetrics(QFont()).height()
+                white = QColor(Qt.GlobalColor.white)
+
+                iconRect = QRectF(
+                    float(DeviceDisplayPadding),
+                    float(y + DeviceDisplayPadding),
+                    float(text_height),
+                    float(text_height),
+                )
+                exclamationRect = iconRect.adjusted(0.25, 1.0, 0.25, 1.0)
+                textRect = QRectF(
+                    iconRect.right() + DeviceDisplayPadding,
+                    iconRect.top(),
+                    width - iconRect.right() - DeviceDisplayPadding,
+                    float(text_height),
+                )
+
+                painter.setPen(QPen(white))
+
+                # Draw a triangle
+                path = QPainterPath()
+                path.moveTo(iconRect.left() + (iconRect.width() / 2), iconRect.top())
+                path.lineTo(iconRect.bottomLeft())
+                path.lineTo(iconRect.bottomRight())
+                path.lineTo(iconRect.left() + (iconRect.width() / 2), iconRect.top())
+
+                painter.fillPath(path, QBrush(white))
+
+                # Draw an exclamation point
+                displayFont = painter.font()
+                warningFont = QFont()
+                warningFont.setBold(True)
+                exclamationFont = QFont(warningFont)
+                exclamationFont.setPointSize(warningFont.pointSize() - 2)
+
+                painter.setFont(exclamationFont)
+                painter.setPen(QPen(self.invalidColor))
+                painter.drawText(exclamationRect, Qt.AlignmentFlag.AlignCenter, "!")
+
+                # Draw the warning
+                painter.setFont(warningFont)
+                painter.setPen(QPen(white))
+                painter.drawText(
+                    textRect,
+                    Qt.TextFlag.TextSingleLine | Qt.AlignmentFlag.AlignVCenter,
+                    text,
+                )
+                painter.setPen(displayPen)
+                painter.setFont(displayFont)
+                y = y + status_height
+
         if self.display_type != DestinationDisplayType.folder_only:
             # Render the projected storage space
             if self.display_type == DestinationDisplayType.usage_only:
@@ -687,6 +754,8 @@ class DestinationDisplay(QWidget):
 
         if self.display_type != DestinationDisplayType.usage_only:
             height += self.deviceDisplay.dc.device_name_height
+            if self.status != DestinationDisplayStatus.valid:
+                height += self.invalidStatusHeight()
         if self.display_type != DestinationDisplayType.folder_only:
             height += self.deviceDisplay.dc.storage_height
 
