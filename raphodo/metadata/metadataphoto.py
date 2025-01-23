@@ -1,5 +1,26 @@
-# SPDX-FileCopyrightText: Copyright 2007-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+#!/usr/bin/env python3
+
+# Copyright (C) 2007-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2007-2024, Damon Lynch"
 
 # ruff: noqa: E402
 
@@ -16,7 +37,7 @@ from PyQt5.QtCore import QSize
 import raphodo.metadata.exiftool as exiftool
 import raphodo.metadata.metadataexiftool as metadataexiftool
 from raphodo.constants import FileType
-from raphodo.tools.utilities import flexible_date_time_parser, image_large_enough_fdo
+from raphodo.utilities import flexible_date_time_parser, image_large_enough_fdo
 
 VENDOR_SERIAL_CODES = (
     "Exif.Photo.BodySerialNumber",
@@ -531,7 +552,7 @@ if __name__ == "__main__":
     print(m.camera_make())
     print(m.camera_model())
     print(m.short_camera_model())
-    print(m.short_camera_model(include_characters="-"))
+    print(m.short_camera_model(include_characters="\-"))
     print(m.date_time())
     print(m.orientation())
     print("Serial number:", m.camera_serial(missing="missing"))

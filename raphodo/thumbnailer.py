@@ -1,5 +1,23 @@
-# SPDX-FileCopyrightText: Copyright 2015-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2015-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2015-2024, Damon Lynch"
 
 import logging
 import pickle
@@ -10,14 +28,14 @@ from PyQt5.QtGui import QImage, QPixmap
 
 from raphodo.interprocess import (
     GenerateThumbnailsArguments,
-    GenerateThumbnailsResults,
+    GenerateThumbnailsResults,  # noqa: F401
     LoadBalancerManager,
     PublishPullPipelineManager,
     ThreadNames,
     create_inproc_msg,
 )
 from raphodo.rpdfile import RPDFile
-from raphodo.tools.utilities import CacheDirs
+from raphodo.utilities import CacheDirs
 
 
 class ThumbnailManagerPara(PublishPullPipelineManager):
@@ -40,7 +58,7 @@ class ThumbnailManagerPara(PublishPullPipelineManager):
         self._worker_id = 0
 
     def process_sink_data(self) -> None:
-        data: GenerateThumbnailsResults = pickle.loads(self.content)
+        data = pickle.loads(self.content)  # type: GenerateThumbnailsResults
         if data.rpd_file is not None:
             if data.thumbnail_bytes is None:
                 thumbnail = QPixmap()
@@ -96,7 +114,7 @@ class Thumbnailer(QObject):
         super().__init__(parent)
         self.context = zmq.Context.instance()
         self.log_gphoto2 = log_gphoto2
-        self._frontend_port: int | None = None
+        self._frontend_port = None  # type: int | None
         self.no_workers = no_workers
         self.logging_port = logging_port
 

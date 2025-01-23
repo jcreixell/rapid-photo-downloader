@@ -1,10 +1,29 @@
-# SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2016-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
 
 """
 Collects attributes about varieties of video formats, including how much of the file
 has to be read in order to extract metadata information or generate a thumbnail.
 """
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2016-2024, Damon Lynch"
+
 
 import datetime  # noqa: F401
 import os
@@ -15,8 +34,7 @@ from raphodo.constants import FileType
 from raphodo.metadata.analysis.photoattributes import ExifToolMixin, vmtouch_output
 from raphodo.metadata.metadatavideo import MetaData
 from raphodo.thumbnailextractor import get_video_frame
-from raphodo.tools.utilities import datetime_roughly_equal
-from raphodo.tools.utilities import format_size_for_user as format_size
+from raphodo.utilities import datetime_roughly_equal, format_size_for_user
 
 
 class VideoAttributes(ExifToolMixin):
@@ -171,21 +189,18 @@ class VideoAttributes(ExifToolMixin):
 
         s += f"Disk cache after metadata read:\n[{self.in_memory}]\n"
         if self.minimum_read_size_in_bytes_datetime is not None:
-            s += (
-                "Minimum read size to extract datetime: "
-                f"{format_size(self.minimum_read_size_in_bytes_datetime)} of "
-                f"{format_size(self.file_size)}\n"
+            s += "Minimum read size to extract datetime: {} of {}\n".format(
+                format_size_for_user(self.minimum_read_size_in_bytes_datetime),
+                format_size_for_user(self.file_size),
             )
         if self.minimum_read_size_in_bytes_thumbnail:
-            s += (
-                "Minimum read size to extract thumbnail: "
-                f"{format_size(self.minimum_read_size_in_bytes_thumbnail)} of "
-                f"{format_size(self.file_size)}\n"
+            s += "Minimum read size to extract thumbnail: {} of {}\n".format(
+                format_size_for_user(self.minimum_read_size_in_bytes_thumbnail),
+                format_size_for_user(self.file_size),
             )
         if self.minimum_metadata_read_size_in_bytes_all is not None:
-            s += (
-                f"Minimum read size to extract variety of tags: "
-                f"{format_size(self.minimum_metadata_read_size_in_bytes_all)}\n"
+            s += "Minimum read size to extract variety of tags: {}\n".format(
+                format_size_for_user(self.minimum_metadata_read_size_in_bytes_all)
             )
         else:
             s += "Could not extract variety of tags with minimal read\n"

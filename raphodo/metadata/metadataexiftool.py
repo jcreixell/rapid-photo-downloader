@@ -1,9 +1,30 @@
-# SPDX-FileCopyrightText: Copyright 2007-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+#!/usr/bin/env python3
+
+# Copyright (C) 2007-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
 
 """
 Read photo and video metadata using ExifTool daemon process.
 """
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2007-2024, Damon Lynch"
 
 import datetime
 import logging
@@ -15,7 +36,7 @@ import raphodo.metadata.exiftool as exiftool
 import raphodo.metadata.fileformats as fileformats
 import raphodo.programversions as programversions
 from raphodo.constants import FileType
-from raphodo.tools.utilities import flexible_date_time_parser
+from raphodo.utilities import flexible_date_time_parser
 
 # Turned into an OrderedDict below
 _index_preview = {
@@ -62,7 +83,7 @@ def generate_short_camera_model(
     'a9III'
     >>> generate_short_camera_model("Fujifilm X-S20")
     'S20'
-    >>> generate_short_camera_model("Fujifilm X-S20", "-")
+    >>> generate_short_camera_model("Fujifilm X-S20", "\-")
     'X-S20'
     >>> generate_short_camera_model("Sony a7C II")
     ''
@@ -122,7 +143,7 @@ def generate_short_camera_model(
     'IXUS'
     >>> generate_short_camera_model("DSC-P92")
     'P92'
-    >>> generate_short_camera_model("DSC-P92", "-")
+    >>> generate_short_camera_model("DSC-P92", "\-")
     'DSC-P92'
 
     :param model_name:
@@ -133,8 +154,6 @@ def generate_short_camera_model(
 
     m = model_name
     m = m.replace(" Mark ", "Mk")
-    if '-' in include_characters:
-        include_characters = include_characters.replace('-', '\\-')
     if m:
         s = (
             rf"(?:[^a-zA-Z0-9{include_characters}]?)"

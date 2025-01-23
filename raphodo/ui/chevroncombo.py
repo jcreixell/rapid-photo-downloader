@@ -1,9 +1,27 @@
-# SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2016-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
 
 """
 Combo box with a chevron selector
 """
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2011-2024, Damon Lynch"
 
 from PyQt5.QtCore import QPointF, QSize, Qt
 from PyQt5.QtGui import QFont, QFontMetrics, QPainter
@@ -30,7 +48,7 @@ class ChevronCombo(QComboBox):
         # Draw chevron (down arrow)
         width = int(QFontMetrics(QFont()).height() * (2 / 3))
         size = QSize(width, width)
-        pixmap = darkModePixmap(path="icons/chevron-down.svg", size=size)
+        pixmap = darkModePixmap(path=":/icons/chevron-down.svg", size=size)
         x = self.rect().width() - width - 6
         y = self.rect().center().y() - width / 2
         p = QPointF(x, y)

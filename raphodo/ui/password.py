@@ -1,15 +1,14 @@
-# SPDX-FileCopyrightText: Copyright 2020 Martin Fitzpatrick
-# SPDX-License-Identifier: MIT OR BSD-2-Clause
-
+# Copyright (C) 2020 Martin Fitzpatrick
 # Source:
 # https://github.com/pythonguis/python-qtwidgets/blob/master/qtwidgets/passwordedit/password.py
+# License: MIT/BSDv2
 
-# Edited Damon Lynch 2024 to remove resource import
+# Edited Damon Lynch 2021 to change resource import
 # Edited Damon Lynch 2024 to optimize imports
 
 from PyQt5 import QtGui, QtWidgets
 
-from raphodo.tools.utilities import data_file_path
+import raphodo.qrc_resources as qrc_resources  # noqa: F401
 
 
 class PasswordEdit(QtWidgets.QLineEdit):
@@ -22,8 +21,8 @@ class PasswordEdit(QtWidgets.QLineEdit):
     def __init__(self, show_visibility=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.visibleIcon = QtGui.QIcon(data_file_path("icons/eye.svg"))
-        self.hiddenIcon = QtGui.QIcon(data_file_path("icons/hidden.svg"))
+        self.visibleIcon = QtGui.QIcon(":/icons/eye.svg")
+        self.hiddenIcon = QtGui.QIcon(":/icons/hidden.svg")
 
         self.setEchoMode(QtWidgets.QLineEdit.Password)
 

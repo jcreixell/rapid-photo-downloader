@@ -1,5 +1,25 @@
-# SPDX-FileCopyrightText: Copyright 2011-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+#!/usr/bin/env python3
+
+# Copyright (C) 2011-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2011-2024, Damon Lynch"
 
 import contextlib
 import errno
@@ -23,9 +43,8 @@ import gphoto2 as gp
 
 from raphodo.camera import Camera, CameraProblemEx, gphoto2_python_logging
 from raphodo.constants import CameraErrorCode, DownloadStatus, FileType
-from raphodo.internationalisation.install import install_gettext
 from raphodo.interprocess import (
-    CopyFilesArguments,
+    CopyFilesArguments,  # noqa: F401
     CopyFilesResults,
     WorkerInPublishPullPipeline,
 )
@@ -42,13 +61,7 @@ from raphodo.problemnotification import (
 from raphodo.rescan import RescanCamera
 from raphodo.rpdfile import RPDFile
 from raphodo.storage.storage import get_uri
-from raphodo.tools.utilities import (
-    GenerateRandomFileName,
-    create_temp_dirs,
-    same_device,
-)
-
-install_gettext()
+from raphodo.utilities import GenerateRandomFileName, create_temp_dirs, same_device
 
 
 def copy_file_metadata(src: str, dst: str) -> tuple | None:
@@ -139,10 +152,9 @@ class FileCopy:
     ) -> bool:
         src_chunks = []
         try:
-            with (
-                open(destination, "wb", self.io_buffer) as self.dest,
-                open(source, "rb", self.io_buffer) as self.src,
-            ):
+            with open(destination, "wb", self.io_buffer) as self.dest, open(
+                source, "rb", self.io_buffer
+            ) as self.src:
                 total = rpd_file.size
                 amount_downloaded = 0
 
@@ -359,7 +371,7 @@ class CopyFilesWorker(WorkerInPublishPullPipeline, FileCopy):
 
     def do_work(self):
         self.problems = CopyingProblems()
-        args: CopyFilesArguments = pickle.loads(self.content)
+        args = pickle.loads(self.content)  # type: CopyFilesArguments
 
         if args.log_gphoto2:
             self.gphoto2_logging = gphoto2_python_logging()
@@ -417,9 +429,7 @@ class CopyFilesWorker(WorkerInPublishPullPipeline, FileCopy):
 
         random_filename = GenerateRandomFileName()
 
-        rpd_cache_same_device: defaultdict[FileType, bool | None] = defaultdict(
-            lambda: None
-        )
+        rpd_cache_same_device = defaultdict(lambda: None)  # type: defaultdict[FileType, bool|None]
 
         photo_temp_dir, video_temp_dir = create_temp_dirs(
             args.photo_download_folder, args.video_download_folder

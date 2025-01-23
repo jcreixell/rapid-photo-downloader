@@ -1,52 +1,6 @@
 Changelog for Rapid Photo Downloader
 ====================================
 
-0.9.37a6 (2024-04-xx)
----------------------
-
- - Terminate WSL Drive Monitor thread during application exit, if necessary.
-
-0.9.37a5 (2024-04-28)
----------------------
-
- - Purge use of Python package easygui.
-
- - Fix bug where querying for locale while prompting for the survey
-   could cause an exception.
-
-0.9.37a4 (2024-04-25)
----------------------
-
- - Additional build fix while generating man page.
-
-0.9.37a3 (2024-04-25)
----------------------
-
- - Additional build fix while generating man page.
-
-0.9.37a2 (2024-04-25)
----------------------
-
- - Build fixes while generating man page.
-
-0.9.37a1 (2024-04-25)
----------------------
-
- - Convert project configuration and build to use 
-   [Hatch](https://github.com/pypa/hatch), 
-   which has resulted in changes to the build process. Linux distribution
-   packagers should consult the [release notes](RELEASE_NOTES.md) for details.
-
- - Fix bug [#154](https://github.com/damonlynch/rapid-photo-downloader/issues/154):
-   System-mounted Windows drives not detected as mounted under WSL.
-
- - Fix invalid escape characters. Thanks to Tino Mettler for the heads-up.
-
- - Remove functionality to import preferences from program versions in the 0.4 
-   range (last released in 2015).
-
- - Remove legacy check for PyQt5 sip. 
-
 0.9.36 (2024-02-13)
 -------------------
 

@@ -1,5 +1,20 @@
-# SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2016-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
 
 """
 Toggle Switch reminiscent of Android On/off switches:
@@ -13,6 +28,10 @@ Inspiration:
 http://stackoverflow.com/questions/14780517/toggle-switch-in-qt
 http://thesmithfam.org/blog/2010/03/10/fancy-qslider-stylesheet/
 """
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2016-2024, Damon Lynch"
+
 
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QColor, QFont, QFontMetrics, QPalette
@@ -62,15 +81,15 @@ class QToggleSwitch(QSlider):
 
     def stylesheet(self, background: QColor | None) -> str:
         shading_intensity = 104
-        windowColor: QColor = QPalette().color(QPalette().Window)
+        windowColor = QPalette().color(QPalette().Window)  # type: QColor
 
         if background is None:
             backgroundName = windowColor.name()
         else:
             backgroundName = QColor(background).name()
 
-        handleLightName: str = (QPalette().color(QPalette().Light)).name()
-        handleDarkName: str = (QPalette().color(QPalette().Dark)).name()
+        handleLightName = (QPalette().color(QPalette().Light)).name()  # type: str
+        handleDarkName = (QPalette().color(QPalette().Dark)).name()  # type: str
         handleHoverLightName = (
             (QPalette().color(QPalette().Light)).lighter(shading_intensity).name()
         )
@@ -81,7 +100,7 @@ class QToggleSwitch(QSlider):
         insetDarkName = windowColor.darker(108).name()
         insetLightName = windowColor.darker(102).name()
 
-        highlightColor: QColor = QPalette().color(QPalette().Highlight)
+        highlightColor = QPalette().color(QPalette().Highlight)  # type: QColor
         highlightLightName = highlightColor.lighter(110).name()
         highlightDarkName = highlightColor.darker(130).name()
 

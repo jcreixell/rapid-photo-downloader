@@ -1,5 +1,26 @@
-# SPDX-FileCopyrightText: Copyright 2007-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+#!/usr/bin/env python3
+
+# Copyright (C) 2007-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
+### USA
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2007-2024, Damon Lynch"
 
 import contextlib
 import locale
@@ -12,6 +33,7 @@ from datetime import datetime, timedelta
 with contextlib.suppress(locale.Error):
     # Use the default locale as defined by the LANG variable
     locale.setlocale(locale.LC_ALL, "")
+
 
 from raphodo.generatenameconfig import (
     APERTURE,
@@ -68,7 +90,6 @@ from raphodo.generatenameconfig import (
     YESTERDAY,
     PrefValueInvalidError,
 )
-from raphodo.internationalisation.install import install_gettext
 from raphodo.prefs.preferences import DownloadsTodayTracker
 from raphodo.problemnotification import (
     FilenameNotFullyGeneratedProblem,
@@ -78,9 +99,7 @@ from raphodo.problemnotification import (
 )
 from raphodo.rpdfile import RPDFile
 from raphodo.storage.storage import get_uri
-from raphodo.tools.utilities import letters
-
-install_gettext()
+from raphodo.utilities import letters
 
 MatchedSequences = namedtuple(
     "MatchedSequences",
@@ -145,7 +164,7 @@ class NameGeneration:
         self.no_metadata = False
 
         self.problems = problems
-        self.problem: GenerationErrors = abstract_attribute()
+        self.problem = abstract_attribute()  # type: GenerationErrors
 
         self.strip_forward_slash = abstract_attribute()
         self.add_extension = abstract_attribute()
@@ -360,7 +379,7 @@ class NameGeneration:
         elif self.L1 == SHORT_CAMERA_MODEL:
             v = self.rpd_file.metadata.short_camera_model()
         elif self.L1 == SHORT_CAMERA_MODEL_HYPHEN:
-            v = self.rpd_file.metadata.short_camera_model(include_characters="-")
+            v = self.rpd_file.metadata.short_camera_model(include_characters="\-")
         elif self.L1 == SERIAL_NUMBER:
             v = self.rpd_file.metadata.camera_serial()
         elif self.L1 == SHUTTER_COUNT:

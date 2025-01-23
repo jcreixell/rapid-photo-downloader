@@ -1,5 +1,23 @@
-# SPDX-FileCopyrightText: Copyright 2011-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2011-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2011-2024, Damon Lynch"
 
 # ruff: noqa: E402
 
@@ -18,7 +36,6 @@ gi.require_version("GLib", "2.0")
 from gi.repository import GLib
 
 import raphodo.metadata.exiftool as exiftool
-import raphodo.metadata.fileextensions
 import raphodo.metadata.fileformats as fileformats
 import raphodo.metadata.metadataexiftool as metadataexiftool
 import raphodo.metadata.metadataphoto as metadataphoto
@@ -34,18 +51,13 @@ from raphodo.constants import (
     ThumbnailCacheDiskStatus,
     ThumbnailCacheStatus,
 )
-from raphodo.internationalisation.install import install_gettext
-from raphodo.internationalisation.utilities import (
+from raphodo.problemnotification import Problem, make_href
+from raphodo.storage.storage import CameraDetails, get_uri
+from raphodo.utilities import (
+    datetime_roughly_equal,
     make_internationalized_list,
     thousands,
 )
-from raphodo.problemnotification import Problem, make_href
-from raphodo.storage.storage import CameraDetails, get_uri
-from raphodo.tools.utilities import (
-    datetime_roughly_equal,
-)
-
-install_gettext()
 
 
 def get_sort_priority(
@@ -434,7 +446,7 @@ class RPDFile:
         self.size = size
 
         # Cached version of call to metadata.date_time()
-        self._datetime: datetime | None = None
+        self._datetime = None  # type: datetime | None
 
         ############################
         # self._no_datetime_metadata
@@ -443,7 +455,7 @@ class RPDFile:
         # If None, haven't tried yet
         # If False, no problems encountered, got it (or it was assigned from mtime
         # when never_read_mdatatime is True)
-        self._no_datetime_metadata: bool | None = None
+        self._no_datetime_metadata = None  # type: bool|None
 
         self.never_read_mdatatime = never_read_mdatatime
         if never_read_mdatatime:
@@ -514,11 +526,11 @@ class RPDFile:
 
         # freedesktop.org cache thumbnails
         # http://specifications.freedesktop.org/thumbnail-spec/thumbnail-spec-latest.html
-        self.thumbnail_status: ThumbnailCacheStatus = ThumbnailCacheStatus.not_ready
+        self.thumbnail_status = ThumbnailCacheStatus.not_ready  # type: ThumbnailCacheStatus
         self.fdo_thumbnail_128_name = ""
         self.fdo_thumbnail_256_name = ""
         # PNG data > 128x128 <= 256x256
-        self.fdo_thumbnail_256: bytes | None = None
+        self.fdo_thumbnail_256 = None  # type: bytes|None
 
         # Thee status of the file in the Rapid Photo Downloader thumbnail cache
         self.thumbnail_cache_status = thumbnail_cache_status
@@ -527,7 +539,7 @@ class RPDFile:
 
         self.cache_full_file_name = ""
         # temporary file used only for video metadata extraction:
-        self.temp_sample_full_file_name: str | None = None
+        self.temp_sample_full_file_name = None  # type: str|None
         # if True, the file is a complete copy of the original
         self.temp_sample_is_complete_file = False
         self.temp_full_file_name = ""
@@ -557,18 +569,13 @@ class RPDFile:
         self.xmp_extension = ""
         self.log_extension = ""
 
-        self.metadata: (
-            metadataphoto.MetaData
-            | metadatavideo.MetaData
-            | metadataexiftool.MetadataExiftool
-            | None
-        ) = None
-        self.metadata_failure: bool = False
+        self.metadata = None  # type: metadataphoto.MetaData | metadatavideo.MetaData | metadataexiftool.MetadataExiftool | None
+        self.metadata_failure = False  # type: bool
 
         # User preference values used for name generation
-        self.subfolder_pref_list: list[str] = []
-        self.name_pref_list: list[str] = []
-        self.generate_extension_case: str = ""
+        self.subfolder_pref_list = []  # type: list[str]
+        self.name_pref_list = []  # type: list[str]
+        self.generate_extension_case = ""  # type: str
 
         self.modified_via_daemon_process = False
 
@@ -716,14 +723,14 @@ class RPDFile:
 
         :return: True if the image is a RAW file
         """
-        return self.extension in raphodo.metadata.fileextensions.RAW_EXTENSIONS
+        return self.extension in fileformats.RAW_EXTENSIONS
 
     def is_heif(self) -> bool:
         """
         Inspects file extension to determine if an HEIF / HEIC file
         :return:
         """
-        return self.extension in raphodo.metadata.fileextensions.HEIF_EXTENTIONS
+        return self.extension in fileformats.HEIF_EXTENTIONS
 
     def is_tiff(self) -> bool:
         """

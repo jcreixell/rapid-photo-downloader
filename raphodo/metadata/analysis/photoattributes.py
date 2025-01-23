@@ -1,12 +1,31 @@
-# SPDX-FileCopyrightText: Copyright 2015-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2015-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
 
 """
 Collects attributes about varieties of photo formats, including how much of the file
 has to be read in order to extract exif information or a preview.
 """
 
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2015-2024, Damon Lynch"
+
 # ruff: noqa: E402
+
 
 import contextlib
 import datetime
@@ -26,7 +45,7 @@ from PyQt5.QtGui import QImage
 from raphodo.metadata.fileformats import FileType
 from raphodo.metadata.metadataexiftool import MetadataExiftool
 from raphodo.metadata.metadataphoto import MetaData, photo_date_time
-from raphodo.tools.utilities import format_size_for_user as format_size
+from raphodo.utilities import format_size_for_user
 
 vmtouch_cmd = 'vmtouch -v "{}"'
 page_size = resource.getpagesize()
@@ -240,8 +259,8 @@ class PhotoAttributes:
             if width_height is not None:
                 self.exif_thumbnail_width = width_height[0]
                 self.exif_thumbnail_height = width_height[1]
-                self.exif_thumbnail_details = (
-                    f"{self.exif_thumbnail_width}x{self.exif_thumbnail_height}"
+                self.exif_thumbnail_details = "{}x{}".format(
+                    self.exif_thumbnail_width, self.exif_thumbnail_height
                 )
 
     def extract_thumbnail(self, metadata: GExiv2.Metadata) -> None:
@@ -487,10 +506,12 @@ class PhotoAttributes:
         return s
 
     def show_preview_source(self) -> str:
-        return (
-            f"{self.preview_source} of {self.no_previews}: "
-            f"{self.preview_width}x{self.preview_height} "
-            f"{self.preview_extension[1:]}\n"
+        return "{} of {}: {}x{} {}\n".format(
+            self.preview_source,
+            self.no_previews,
+            self.preview_width,
+            self.preview_height,
+            self.preview_extension[1:],
         )
 
     def __str__(self):
@@ -543,14 +564,12 @@ class PhotoAttributes:
                 )
 
         if self.minimum_exif_read_size_in_bytes_thumbnail is not None:
-            s += (
-                "Minimum read size for thumbnail or first preview: "
-                f"{format_size(self.minimum_exif_read_size_in_bytes_thumbnail)}\n"
+            s += "Minimum read size for thumbnail or first preview: {}\n".format(
+                format_size_for_user(self.minimum_exif_read_size_in_bytes_thumbnail)
             )
         if self.minimum_exif_read_size_in_bytes_orientation is not None:
-            s += (
-                "Minimum read size to extract orientation tag: "
-                f"{format_size(self.minimum_exif_read_size_in_bytes_orientation)}\n"
+            s += "Minimum read size to extract orientation tag: {}\n".format(
+                format_size_for_user(self.minimum_exif_read_size_in_bytes_orientation)
             )
         if (
             self.minimum_exif_read_size_in_bytes_orientation is None
@@ -559,9 +578,8 @@ class PhotoAttributes:
         ):
             s += "Could not extract orientation tag with minimal read\n"
         if self.minimum_exif_read_size_in_bytes_datetime is not None:
-            s += (
-                "Minimum read size to extract datetime tag: "
-                f"{format_size(self.minimum_exif_read_size_in_bytes_datetime)}\n"
+            s += "Minimum read size to extract datetime tag: {}\n".format(
+                format_size_for_user(self.minimum_exif_read_size_in_bytes_datetime)
             )
         if (
             self.minimum_exif_read_size_in_bytes_datetime is None
@@ -570,9 +588,8 @@ class PhotoAttributes:
         ):
             s += "Could not extract datetime tag with minimal read\n"
         if self.minimum_metadata_read_size_in_bytes_all is not None:
-            s += (
-                "Minimum read size to extract variety of tags: "
-                f"{format_size(self.minimum_metadata_read_size_in_bytes_all)}\n"
+            s += "Minimum read size to extract variety of tags: {}\n".format(
+                format_size_for_user(self.minimum_metadata_read_size_in_bytes_all)
             )
         elif self.in_memory is not None:
             s += "Could not extract variety of tags with minimal read\n"
@@ -652,9 +669,11 @@ class ExifToolPhotoAttributes(ExifToolMixin, PhotoAttributes):
         # )
 
     def show_preview_source(self) -> str:
-        return (
-            f"{self.preview_source} of {self.no_previews}: "
-            f"{self.preview_width}x{self.preview_height}\n"
+        return "{} of {}: {}x{}\n".format(
+            self.preview_source,
+            self.no_previews,
+            self.preview_width,
+            self.preview_height,
         )
 
     def orientation_extract(self, metadata: MetadataExiftool, size_in_bytes):

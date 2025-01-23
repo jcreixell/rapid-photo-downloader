@@ -1,11 +1,29 @@
-# SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2016-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2016-2024, Damon Lynch"
 
 import math
 
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import (
-    QFont,
+    QFont,  # noqa: F401
     QFontMetrics,
     QGuiApplication,
     QIcon,
@@ -14,11 +32,8 @@ from PyQt5.QtGui import (
 )
 from PyQt5.QtWidgets import QApplication, QPushButton, QSizePolicy
 
-from raphodo.internationalisation.install import install_gettext
 from raphodo.ui.rotatedpushbutton import FlatButton
 from raphodo.ui.viewutils import darkModeIcon, is_dark_mode
-
-install_gettext()
 
 
 class TopPushButton(QPushButton, FlatButton):
@@ -35,7 +50,7 @@ class TopPushButton(QPushButton, FlatButton):
         self.setCheckable(True)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
 
-        font: QFont = self.font()
+        font = self.font()  # type: QFont
         top_row_font_size = font.pointSize() + 8
         self.top_row_icon_size = top_row_font_size + 10
         font.setPointSize(top_row_font_size)

@@ -1,21 +1,38 @@
-# SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2016-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
 
 """
 Display an About window
 """
 
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2016-2024, Damon Lynch"
+
 import re
-from pathlib import Path
 
 from PyQt5.QtCore import QSize, Qt, pyqtSlot
-from PyQt5.QtGui import QFont, QPixmap
+from PyQt5.QtGui import QFont, QPixmap  # noqa: F401
 from PyQt5.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QHBoxLayout,
     QLabel,
-    QPushButton,
+    QPushButton,  # noqa: F401
     QScrollArea,
     QSizePolicy,
     QStackedWidget,
@@ -24,11 +41,7 @@ from PyQt5.QtWidgets import (
 )
 
 import raphodo.__about__ as __about__
-from raphodo.internationalisation.install import install_gettext
-from raphodo.tools.utilities import data_file_path
 from raphodo.ui.viewutils import translateDialogBoxButtons
-
-install_gettext()
 
 
 class AboutDialog(QDialog):
@@ -42,11 +55,10 @@ class AboutDialog(QDialog):
         self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
 
         self.setObjectName("AboutDialog")
-        png = data_file_path("splashscreen.png")
-        url = Path(png).as_posix()
-        self.setStyleSheet(f"QDialog#AboutDialog {{background-image: url({url});}}")
-
-        pixmap = QPixmap(png)
+        self.setStyleSheet(
+            "QDialog#AboutDialog {background-image: url(:/splashscreen.png);}"
+        )
+        pixmap = QPixmap(":/splashscreen.png")
         try:
             ratio = pixmap.devicePixelRatioF()
         except AttributeError:
@@ -94,7 +106,7 @@ class AboutDialog(QDialog):
         details.setStyleSheet(details_style_sheet)
         details.setOpenExternalLinks(True)
         details.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        font: QFont = self.font()
+        font = self.font()  # type: QFont
         font_size = font.pointSize() - 2
         font.setPointSize(font_size)
         details.setFont(font)
@@ -320,16 +332,16 @@ class AboutDialog(QDialog):
         self.stack.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         buttonBox = QDialogButtonBox()
-        closeButton: QPushButton = buttonBox.addButton(QDialogButtonBox.Close)
+        closeButton = buttonBox.addButton(QDialogButtonBox.Close)  # type: QPushButton
         translateDialogBoxButtons(buttonBox)
-        self.creditsButton: QPushButton = buttonBox.addButton(
+        self.creditsButton = buttonBox.addButton(
             _("Credits"), QDialogButtonBox.HelpRole
-        )
+        )  # type: QPushButton
         self.creditsButton.setDefault(False)
         self.creditsButton.setCheckable(True)
-        self.translatorsButton: QPushButton = buttonBox.addButton(
+        self.translatorsButton = buttonBox.addButton(
             _("Translators"), QDialogButtonBox.ResetRole
-        )
+        )  # type: QPushButton
         self.translatorsButton.setDefault(False)
         self.translatorsButton.setCheckable(True)
         closeButton.setDefault(True)

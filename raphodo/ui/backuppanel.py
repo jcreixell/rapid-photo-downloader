@@ -1,9 +1,27 @@
-# SPDX-FileCopyrightText: Copyright 2017-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2017-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
 
 """
 Display backup preferences
 """
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2017-2024, Damon Lynch"
 
 import logging
 import os
@@ -44,26 +62,22 @@ from raphodo.constants import (
     ViewRowType,
 )
 from raphodo.devices import (
-    BackupDeviceCollection,
+    BackupDeviceCollection,  # noqa: F401
     BackupVolumeDetails,
     DownloadingTo,
 )
-from raphodo.internationalisation.install import install_gettext
+from raphodo.foldercombo import FolderCombo
 from raphodo.prefs.preferences import Preferences
 from raphodo.rpdfile import FileTypeCounter
 from raphodo.storage.storage import ValidMounts, get_media_dir, get_mount_size
-from raphodo.tools.utilities import data_file_path
 from raphodo.ui.destinationdisplay import adjusted_download_size, make_body_details
 from raphodo.ui.devicedisplay import DeviceDisplay, DeviceView, icon_size
-from raphodo.ui.foldercombo import FolderCombo
 from raphodo.ui.panelview import QPanelView
 from raphodo.ui.viewutils import (
     FlexiFrame,
     RowTracker,
     ScrollAreaNoFrame,
 )
-
-install_gettext()
 
 
 class BackupVolumeUse(NamedTuple):
@@ -99,27 +113,25 @@ class BackupDeviceModel(QAbstractListModel):
         self.raidApp = parent.rapidApp
         self.prefs = parent.prefs
         size = icon_size()
-        self.removableIcon = QIcon(
-            data_file_path("icons/drive-removable-media.svg")
-        ).pixmap(size)
-        self.folderIcon = QIcon(data_file_path("icons/folder.svg")).pixmap(size)
+        self.removableIcon = QIcon(":icons/drive-removable-media.svg").pixmap(size)
+        self.folderIcon = QIcon(":/icons/folder.svg").pixmap(size)
         self._initValues()
 
     def _initValues(self):
-        self.rows: RowTracker = RowTracker()
-        self.row_id_counter: int = 0
+        self.rows = RowTracker()  # type: RowTracker
+        self.row_id_counter = 0  # type: int
         # {row_id}
-        self.headers: set[int] = set()
+        self.headers = set()  # type: set[int]
         # path: BackupViewRow
-        self.backup_devices: dict[str, BackupViewRow] = dict()
-        self.path_to_row_ids: dict[str, list[int]] = defaultdict(list)
-        self.row_id_to_path: dict[int, str] = dict()
+        self.backup_devices = dict()  # type: dict[str, BackupViewRow]
+        self.path_to_row_ids = defaultdict(list)  # type: dict[str, list[int]]
+        self.row_id_to_path = dict()  # type: dict[int, str]
 
         self.marked = FileTypeCounter()
         self.photos_size_to_download = self.videos_size_to_download = 0
 
         # os_stat_device: set[FileType]
-        self._downloading_to: DownloadingTo = defaultdict(set)
+        self._downloading_to = defaultdict(set)  # type: DownloadingTo
 
     @property
     def downloading_to(self) -> DownloadingTo:
@@ -385,7 +397,7 @@ class BackupDeviceDelegate(QStyledItemDelegate):
         y = option.rect.y()
         width = option.rect.width()
 
-        view_type: ViewRowType = index.data(Qt.DisplayRole)
+        view_type = index.data(Qt.DisplayRole)  # type: ViewRowType
         if view_type == ViewRowType.header:
             display_name, icon = index.data(Roles.device_details)
 
@@ -400,7 +412,7 @@ class BackupDeviceDelegate(QStyledItemDelegate):
         else:
             assert view_type == ViewRowType.content
 
-            data: BackupVolumeUse = index.data(Roles.storage)
+            data = index.data(Roles.storage)  # type: BackupVolumeUse
             details = make_body_details(
                 bytes_total=data.bytes_total,
                 bytes_free=data.bytes_free,
@@ -417,7 +429,7 @@ class BackupDeviceDelegate(QStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
-        view_type: ViewRowType = index.data(Qt.DisplayRole)
+        view_type = index.data(Qt.DisplayRole)  # type: ViewRowType
         if view_type == ViewRowType.header:
             height = self.deviceDisplay.dc.device_name_height
         else:
@@ -727,7 +739,7 @@ class BackupPanel(ScrollAreaNoFrame):
 
         assert parent is not None
         self.rapidApp = parent
-        self.prefs: Preferences = self.rapidApp.prefs
+        self.prefs = self.rapidApp.prefs  # type: Preferences
         self.setObjectName("backupPanelScrollArea")
 
         self.backupDevices = BackupDeviceModel(parent=self)
@@ -818,7 +830,7 @@ class BackupPanel(ScrollAreaNoFrame):
             logging.debug("No backups configured: no backup destinations to display")
             return
 
-        backup_devices: BackupDeviceCollection = self.rapidApp.backup_devices
+        backup_devices = self.rapidApp.backup_devices  # type: BackupDeviceCollection
         if self.prefs.backup_device_autodetection:
             for path in backup_devices:
                 self.backupDevices.addBackupVolume(

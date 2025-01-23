@@ -1,6 +1,25 @@
-# SPDX-FileCopyrightText: Copyright 2015-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+#!/usr/bin/env python3
 
+# Copyright (C) 2015-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2015-2024, Damon Lynch"
 
 import datetime
 import logging
@@ -19,7 +38,7 @@ from raphodo.storage.storage import (
     get_program_cache_directory,
     get_program_data_directory,
 )
-from raphodo.tools.utilities import divide_list_on_length, runs
+from raphodo.utilities import divide_list_on_length, runs
 
 
 class FileDownloaded(NamedTuple):
@@ -259,9 +278,8 @@ class ThumbnailRowsSQL:
         if sort_by == Sort.modification_time:
             sort = f"ORDER BY mtime {self.sort_order_map[sort_order]}"
         else:
-            sort = (
-                f"ORDER BY {self.sort_map[sort_by]} {self.sort_order_map[sort_order]}, "
-                f"mtime {self.sort_order_map[sort_order]}"
+            sort = "ORDER BY {0} {1}, mtime {1}".format(
+                self.sort_map[sort_by], self.sort_order_map[sort_order]
             )
         return sort
 
@@ -715,7 +733,7 @@ class DownloadedSQL:
         self.update_table()
 
         # Generate values to calculate shifts in time zones /
-        self.time_zone_offsets: dict[int, tuple[int]] = {}
+        self.time_zone_offsets = {}  # type: dict[int, tuple[int]]
         for time_zone_offset_resolution in (60, 30, 15):  # minutes
             positive = range(
                 time_zone_offset_resolution * 60,  # seconds
@@ -736,17 +754,6 @@ class DownloadedSQL:
         self.found_offset = 0  # in seconds. Set to actual offset when one is found.
         # h:mm. Set to actual offset when one is found. Can be negative.
         self.found_offset_hr = ""
-
-    def no_downloaded(self) -> None:
-        """
-        :return: how many downloaded files are in the db
-        """
-
-        conn = sqlite3.connect(self.db)
-        c = conn.cursor()
-        c.execute(f"SELECT COUNT(*) FROM {self.table_name}")
-        count = c.fetchall()
-        return count[0][0]
 
     def update_table(self, reset: bool = False) -> None:
         """
@@ -847,9 +854,8 @@ class DownloadedSQL:
         conn = sqlite3.connect(self.db, detect_types=sqlite3.PARSE_DECLTYPES)
         c = conn.cursor()
         c.execute(
-            "SELECT download_name, download_datetime as [timestamp] FROM "
-            f"{self.table_name} "
-            "WHERE file_name=? AND size=? AND mtime=?",
+            """SELECT download_name, download_datetime as [timestamp] FROM {tn} 
+            WHERE file_name=? AND size=? AND mtime=?""".format(tn=self.table_name),
             (name, size, modification_time),
         )
         row = c.fetchone()
@@ -861,9 +867,8 @@ class DownloadedSQL:
 
         if self.found_offset:
             c.execute(
-                "SELECT download_name, download_datetime as [timestamp] "
-                f"FROM {self.table_name} "
-                "WHERE file_name=? AND size=? AND mtime=?",
+                """SELECT download_name, download_datetime as [timestamp] FROM {tn} 
+                WHERE file_name=? AND size=? AND mtime=?""".format(tn=self.table_name),
                 (name, size, modification_time - self.found_offset),
             )
             row = c.fetchone()
@@ -888,7 +893,7 @@ class DownloadedSQL:
         row = c.fetchone()
         if row is not None:
             # we now have a time within 24 hours in either direction of the mtime
-            mtime: float = row[2]
+            mtime = row[2]  # type: float
             for offset in self.time_zone_offsets[time_zone_offset_resolution]:
                 if mtime + offset == modification_time:
                     self.found_offset = offset

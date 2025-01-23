@@ -1,9 +1,29 @@
-# SPDX-FileCopyrightText: Copyright 2017-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+#!/usr/bin/env python3
+
+# Copyright (C) 2017-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader. If not,
+# see <http://www.gnu.org/licenses/>.
 
 """
 Error log window for Rapid Photo Downloader
 """
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2017-2024, Damon Lynch"
 
 import math
 import re
@@ -11,7 +31,7 @@ from collections import deque
 
 from PyQt5.QtCore import (
     QEvent,
-    QRect,
+    QRect,  # noqa: F401
     QSize,
     Qt,
     QTimer,
@@ -51,12 +71,8 @@ from PyQt5.QtWidgets import (
 from showinfm import show_in_file_manager
 
 from raphodo.constants import ErrorType
-from raphodo.internationalisation.install import install_gettext
 from raphodo.problemnotification import Problem, Problems
-from raphodo.tools.utilities import data_file_path
 from raphodo.ui.viewutils import darkModeIcon, translateDialogBoxButtons
-
-install_gettext()
 
 
 class QFindLineEdit(QLineEdit):
@@ -149,7 +165,7 @@ class ErrorReport(QDialog):
         }
         """
 
-        document: QTextDocument = self.log.document()
+        document = self.log.document()  # type: QTextDocument
         document.setDefaultStyleSheet(sheet)
         # document.setIndentWidth(QFontMetrics(QFont()).boundingRect('200').width())
 
@@ -177,7 +193,7 @@ class ErrorReport(QDialog):
         message = _("Find in reports")
         self.find = QFindLineEdit(find_text=message)
         self.find.textEdited.connect(self.onFindChanged)
-        style: QStyle = self.find.style()
+        style = self.find.style()  # type: QStyle
         frame_width = style.pixelMetric(QStyle.PM_DefaultFrameWidth)
         button_margin = style.pixelMetric(QStyle.PM_ButtonMargin)
         spacing = (frame_width + button_margin) * 2 + 8
@@ -190,12 +206,12 @@ class ErrorReport(QDialog):
         size = QSize(font_height, font_height)
 
         self.up = QPushButton()
-        self.up.setIcon(darkModeIcon(path="icons/up.svg", size=QSize(100, 100)))
+        self.up.setIcon(darkModeIcon(path=":/icons/up.svg", size=QSize(100, 100)))
         self.up.setIconSize(size)
         self.up.clicked.connect(self.upClicked)
         self.up.setToolTip(_("Find the previous occurrence of the phrase"))
         self.down = QPushButton()
-        self.down.setIcon(darkModeIcon(path="icons/down.svg", size=QSize(100, 100)))
+        self.down.setIcon(darkModeIcon(path=":/icons/down.svg", size=QSize(100, 100)))
         self.down.setIconSize(size)
         self.down.clicked.connect(self.downClicked)
         self.down.setToolTip(_("Find the next occurrence of the phrase"))
@@ -220,6 +236,10 @@ class ErrorReport(QDialog):
             .width()
             + spacing
         )
+        # Translators: match number of total matches in a search, e.g. 1 of 10 matches
+        _("%(matchnumber)s of %(total)s matches")
+
+        # TODO implement this once translations done
 
         findLayout = QHBoxLayout()
         findLayout.setSpacing(0)
@@ -238,9 +258,7 @@ class ErrorReport(QDialog):
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
         translateDialogBoxButtons(buttons)
-        self.clear: QPushButton = buttons.addButton(
-            _("Clear"), QDialogButtonBox.ActionRole
-        )
+        self.clear = buttons.addButton(_("Clear"), QDialogButtonBox.ActionRole)  # type: QPushButton
         buttons.rejected.connect(self.reject)
         self.clear.clicked.connect(self.clearClicked)
         self.clear.setEnabled(False)
@@ -255,9 +273,9 @@ class ErrorReport(QDialog):
         self.onFindChanged("")
 
         self.icon_lookup = {
-            ErrorType.warning: "report/warning.svg",
-            ErrorType.serious_error: "report/error.svg",
-            ErrorType.critical_error: "report/critical.svg",
+            ErrorType.warning: ":/report/warning.svg",
+            ErrorType.serious_error: ":/report/error.svg",
+            ErrorType.critical_error: ":/report/critical.svg",
         }
 
     @pyqtSlot()
@@ -275,7 +293,7 @@ class ErrorReport(QDialog):
         return flags
 
     def _clearSearch(self) -> None:
-        cursor: QTextCursor = self.log.textCursor()
+        cursor = self.log.textCursor()  # type: QTextCursor
         if cursor.hasSelection():
             cursor.clearSelection()
             self.log.setTextCursor(cursor)
@@ -296,7 +314,7 @@ class ErrorReport(QDialog):
             QTimer.singleShot(1000, self._doFind)
             return
 
-        cursor: QTextCursor = self.log.textCursor()
+        cursor = self.log.textCursor()  # type: QTextCursor
         text = self.find.getText()
         highlight = self.highlightAll.isChecked()
 
@@ -305,7 +323,7 @@ class ErrorReport(QDialog):
             self.findResults.setText("")
             return
 
-        initial_position: int = cursor.selectionStart()
+        initial_position = cursor.selectionStart()  # type: int
 
         self.log.moveCursor(QTextCursor.Start)
 
@@ -317,7 +335,7 @@ class ErrorReport(QDialog):
         self.find_cursors = []
 
         while self.log.find(text, flags):
-            cursor: QTextCursor = self.log.textCursor()
+            cursor = self.log.textCursor()  # type: QTextCursor
             self.find_cursors.append(cursor)
 
             if index is None and cursor.selectionStart() >= initial_position:
@@ -354,10 +372,7 @@ class ErrorReport(QDialog):
             self.current_find_index = index
             self.log.setTextCursor(cursor)
             self.findResults.setText(
-                # Translators: match number of total matches in a search,
-                # e.g. 1 of 10 matches
-                _("%(matchnumber)s of %(total)s matches")
-                % dict(matchnumber=index + 1, total=len(self.find_cursors))
+                _("%s of %s matches") % (index + 1, len(self.find_cursors))
             )
             self.findResults.setPalette(self.foundPalette)
 
@@ -447,9 +462,8 @@ class ErrorReport(QDialog):
                 extra_text = text[end + 4 : next_start]
             else:
                 extra_text = text[end + 4 :]
-            new_text = (
-                f'{new_text}<a href="file:///{len(self.uris)}">'
-                f"{text[href_end + 2: end]}</a>{extra_text}"
+            new_text = '{}<a href="file:///{}">{}</a>{}'.format(
+                new_text, len(self.uris), text[href_end + 2 : end], extra_text
             )
             self.uris.append(href)
             start = next_start
@@ -481,7 +495,7 @@ class ErrorReport(QDialog):
         html = f"{html}<table>"
         for problem in problems:
             line = self._getBody(problem=problem)
-            icon = data_file_path(self.icon_lookup[problem.severity])
+            icon = self.icon_lookup[problem.severity]
             icon = f'<img src="{icon}" height=16 width=16>'
             html = (
                 f"{html}<tr><td width=32 align=center>{icon}</td>"
@@ -542,7 +556,7 @@ class SpeechBubble(QLabel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.rapidApp = parent
-        self.image = QIcon(data_file_path("speech-bubble.svg"))
+        self.image = QIcon(":/speech-bubble.svg")
         self._count = 0
         self.fillColor = QPalette().color(QPalette.Window)
         self.counterFont = QFont()
@@ -579,7 +593,7 @@ class SpeechBubble(QLabel):
 
         height = self.height()
 
-        rect: QRect = self.rect()
+        rect = self.rect()  # type: QRect
         if not self._count:
             painter.fillRect(rect, self.fillColor)
         else:

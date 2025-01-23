@@ -1,9 +1,27 @@
-# SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2016-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
 
 """
 Display file system folders and allow the user to select one
 """
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2016-2024, Damon Lynch"
 
 import logging
 import os
@@ -41,16 +59,13 @@ from raphodo.constants import (
     minPanelWidth,
     non_system_root_folders,
 )
-from raphodo.internationalisation.install import install_gettext
 from raphodo.storage.storage import get_media_dir, gvfs_gphoto2_path
 from raphodo.ui.viewutils import (
     TopFramedVerticalScrollBar,
     darkModeIcon,
     standard_font_size,
 )
-from raphodo.wsl.wslutils import wsl_filter_directories
-
-install_gettext()
+from raphodo.wslutils import wsl_filter_directories
 
 
 class FileSystemModel(QFileSystemModel):
@@ -71,10 +86,10 @@ class FileSystemModel(QFileSystemModel):
         size = QSize(s, s)
 
         self.folder_icon = darkModeIcon(
-            path="icons/folder.svg", size=size, soften_regular_mode_color=True
+            path=":/icons/folder.svg", size=size, soften_regular_mode_color=True
         )
         self.download_folder_icon = darkModeIcon(
-            path="icons/folder-filled.svg", size=size, soften_regular_mode_color=True
+            path=":/icons/folder-filled.svg", size=size, soften_regular_mode_color=True
         )
 
         self.setRootPath("/")
@@ -85,17 +100,17 @@ class FileSystemModel(QFileSystemModel):
 
         # First value: subfolders we've created to demonstrate to the user
         # where their files will be downloaded to
-        self.preview_subfolders: set[str] = set()
+        self.preview_subfolders = set()  # type: set[str]
         # Second value: subfolders that already existed, but that we still
         # want to indicate to the user where their files will be downloaded to
-        self.download_subfolders: set[str] = set()
+        self.download_subfolders = set()  # type: set[str]
 
         # Folders that were actually used to download files into
-        self.subfolders_downloaded_into: set[str] = set()
+        self.subfolders_downloaded_into = set()  # type: set[str]
 
     def data(self, index: QModelIndex, role=Qt.DisplayRole):
         if role == Qt.DecorationRole:
-            path: str = index.data(QFileSystemModel.FilePathRole)
+            path = index.data(QFileSystemModel.FilePathRole)  # type: str
             if (
                 path in self.download_subfolders
                 or path in self.subfolders_downloaded_into
@@ -135,6 +150,7 @@ class FileSystemModel(QFileSystemModel):
 
 
 class FileSystemView(QTreeView):
+
     showSystemFolders = pyqtSignal(bool)
     filePathReset = pyqtSignal()
 
@@ -156,7 +172,7 @@ class FileSystemView(QTreeView):
         )
         self.openInFileBrowserAct.triggered.connect(self.doOpenInFileBrowserAct)
         self.openInFileBrowserAct.setEnabled(self.rapidApp.file_manager is not None)
-        self.clickedIndex: QModelIndex | None = None
+        self.clickedIndex = None  # type: QModelIndex | None
 
         self.resetSelectionAct = self.contextMenu.addAction(_("Reset"))
         self.resetSelectionAct.triggered.connect(self.doResetSelectionAct)
@@ -288,8 +304,10 @@ class FileSystemFilter(QSortFilterProxyModel):
     def filterAcceptsRow(
         self, sourceRow: int, sourceParent: QModelIndex = None
     ) -> bool:
-        index: QModelIndex = self.sourceModel().index(sourceRow, 0, sourceParent)
-        path: str = index.data(QFileSystemModel.FilePathRole)
+        index = self.sourceModel().index(
+            sourceRow, 0, sourceParent
+        )  # type: QModelIndex
+        path = index.data(QFileSystemModel.FilePathRole)  # type: str
 
         if not self.prefs.show_system_folders and path != "/":
             path_ok = False

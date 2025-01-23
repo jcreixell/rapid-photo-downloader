@@ -1,5 +1,24 @@
-# SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2016-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader. If not,
+# see <http://www.gnu.org/licenses/>.
+
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2016-2024, Damon Lynch"
 
 from PyQt5.QtCore import Qt, QTextStream, pyqtSignal
 from PyQt5.QtNetwork import QLocalServer, QLocalSocket
@@ -17,17 +36,17 @@ class QtSingleApplication(QApplication):
     def __init__(self, programId: str, *argv) -> None:
         super().__init__(*argv)
         self._id = programId
-        self._activationWindow: QMainWindow | None = None
-        self._activateOnMessage: bool = False
+        self._activationWindow = None  # type: QMainWindow|None
+        self._activateOnMessage = False  # type: bool
 
         # Is there another instance running?
-        self._outSocket: QLocalSocket = QLocalSocket()
+        self._outSocket = QLocalSocket()  # type: QLocalSocket
         self._outSocket.connectToServer(self._id)
-        self._isRunning: bool = self._outSocket.waitForConnected()
+        self._isRunning = self._outSocket.waitForConnected()  # type: bool
 
-        self._outStream: QTextStream | None = None
+        self._outStream = None  # type: QTextStream|None
         self._inSocket = None
-        self._inStream: QTextStream | None = None
+        self._inStream = None  # type: QTextStream|None
         self._server = None
 
         if self._isRunning:

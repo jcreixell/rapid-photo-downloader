@@ -1,5 +1,22 @@
-# SPDX-FileCopyrightText: Copyright 2015-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
+#!/usr/bin/env python3
+
+# Copyright (C) 2015-2024 Damon Lynch <damonlynch@gmail.com>
+
+# This file is part of Rapid Photo Downloader.
+#
+# Rapid Photo Downloader is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Rapid Photo Downloader is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Rapid Photo Downloader.  If not,
+# see <http://www.gnu.org/licenses/>.
 
 """
 Generates thumbnails for files that have already been downloaded, and
@@ -10,6 +27,9 @@ See cache.py for definitions of various caches used by Rapid Photo Downloader.
 
 Runs as a single instance daemon process, i.e., for the lifetime of the program.
 """
+
+__author__ = "Damon Lynch"
+__copyright__ = "Copyright 2015-2024, Damon Lynch"
 
 import contextlib
 import locale
@@ -26,13 +46,13 @@ import zmq
 
 from raphodo.cache import FdoCacheLarge, FdoCacheNormal
 from raphodo.constants import (
-    ExtractionProcessing,
+    ExtractionProcessing,  # noqa: F401
     ExtractionTask,
 )
 from raphodo.interprocess import (
     DaemonProcess,
     GenerateThumbnailsResults,
-    ThumbnailDaemonData,
+    ThumbnailDaemonData,  # noqa: F401
     ThumbnailExtractorArgument,
 )
 from raphodo.thumbnailpara import GetThumbnailFromCache, preprocess_thumbnail_from_disk
@@ -66,7 +86,7 @@ class DameonThumbnailWorker(DaemonProcess):
 
         self.check_for_command(directive, content)
 
-        data: ThumbnailDaemonData = pickle.loads(content)
+        data = pickle.loads(content)  # type: ThumbnailDaemonData
         assert data.frontend_port is not None
         self.frontend.connect(f"tcp://localhost:{data.frontend_port}")
 
@@ -79,7 +99,7 @@ class DameonThumbnailWorker(DaemonProcess):
 
             self.check_for_command(directive, content)
 
-            data: ThumbnailDaemonData = pickle.loads(content)
+            data = pickle.loads(content)  # type: ThumbnailDaemonData
             rpd_file = data.rpd_file
             if data.backup_full_file_names is not None:
                 # File has been backed up, and an extractor has already generated a FDO
@@ -141,7 +161,7 @@ class DameonThumbnailWorker(DaemonProcess):
                         full_file_name_to_work_on,
                         origin,
                     ) = cache_search
-                    processing: set[ExtractionProcessing] = set()
+                    processing = set()  # type: set[ExtractionProcessing]
 
                     if task == ExtractionTask.undetermined:
                         # Thumbnail was not found in any cache: extract it
